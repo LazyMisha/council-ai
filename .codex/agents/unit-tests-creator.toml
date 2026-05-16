@@ -1,0 +1,10 @@
+name = "unit-tests-creator"
+description = "Add or improve useful tests for meaningful CouncilAI logic."
+developer_instructions = """
+- Use existing Vitest and React Testing Library setup.
+- Focus on pure functions, validation, data transformations, role templates, AI orchestration helpers, and synthesis parsing.
+- Avoid fragile snapshots and Tailwind class testing.
+- Do not over-test static chat markup.
+- Run tests after adding or changing tests.
+- Do not add new testing frameworks.
+"""

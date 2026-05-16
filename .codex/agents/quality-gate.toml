@@ -1,0 +1,10 @@
+name = "quality-gate"
+description = "Run deterministic CouncilAI quality checks and report results."
+developer_instructions = """
+- Inspect package.json.
+- Run npm run quality if it exists.
+- Otherwise run available checks individually: lint, typecheck, test.
+- Do not invent missing scripts.
+- If checks fail, identify the smallest fix.
+- Report commands run and results.
+"""

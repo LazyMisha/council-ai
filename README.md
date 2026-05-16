@@ -1,36 +1,48 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# CouncilAI
 
-## Getting Started
+CouncilAI is a minimal chat room application for better decisions. Each chat room can include multiple AI instances with different roles, such as Software Architect, Business Analyst, Skeptic, and Optimist.
 
-First, run the development server:
+The user creates a chat room, adds AI instances, starts a topic, and can join the conversation anytime while AI instances discuss the topic and contribute role-based responses plus a final synthesis.
+
+## Current Status
+
+The project is a Next.js App Router app with a minimal local-state chat room UI and a small API route for AI instance responses. Auth, persistence, file upload, and realtime collaboration are not implemented yet.
+
+## MVP Scope
+
+- Left sidebar with CouncilAI, `+ New chat room`, and chat rooms.
+- Main chat room area with user messages on the right and AI instance messages on the left.
+- AI instances area showing roles in the current chat room.
+- Message input with `Start a topic or reply...`.
+- Local message sending and API-generated AI instance responses.
+- Mock AI instance fallback when `OPENAI_API_KEY` is missing.
+- Final synthesis placeholder.
+
+Out of scope for the first MVP: dashboards, long marketing pages, file upload, collaboration, billing, background jobs, and complex routing.
+
+## Tech Stack
+
+- Next.js App Router
+- React
+- TypeScript
+- Tailwind CSS
+- Vitest and React Testing Library
+- Planned later: Prisma, PostgreSQL, Supabase Auth, Supabase Storage, OpenAI API
+
+## Local Development
 
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm run quality
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+The app runs at [http://localhost:3000](http://localhost:3000) by default.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+Copy `.env.example` to `.env.local` and set `OPENAI_API_KEY` to enable real AI instance responses. Without it, CouncilAI uses local mock responses.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Next Planned Steps
 
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+1. Persist chat rooms, messages, roles, and syntheses.
+2. Replace mock responses with server-side OpenAI orchestration.
+3. Add auth after the core chat room loop is clear.

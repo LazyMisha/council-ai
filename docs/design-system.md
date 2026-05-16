@@ -91,3 +91,33 @@ Avoid saturated gradients, neon colors, heavy purple-blue palettes, and decorati
 - Roadmap or feature sections inside the app.
 - Long role explanations on the main screen.
 - Treating the product as a generic single-assistant chatbot.
+
+## AI Instance Accent Colors
+
+Each AI instance has a subtle accent color to help identify its role without dominating the interface.
+
+### Principles
+
+- Colors are calm, muted, and warm.
+- They serve as quiet identifiers, not decoration.
+- Message bubbles stay neutral; only chips, dots, and role labels carry the accent.
+- Do not rely on color alone—role names are always visible.
+
+### Predefined Role Accents
+
+- Software Architect: muted blue-gray
+- Business Analyst: sage green
+- Skeptic: warm charcoal
+- Optimist: soft ochre
+- Product Expert: clay / terracotta
+- Critic: soft rose
+
+### Custom AI Instances
+
+Custom roles receive a deterministic color from a rotating muted palette based on their name, so the same role always gets the same color across sessions.
+
+### Usage
+
+- Role chips: subtle border and background tint
+- Message role label: small colored dot + tinted text
+- Role picker: small colored dot next to each predefined role

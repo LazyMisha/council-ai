@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import type { FormEvent, KeyboardEvent } from "react";
 import { isPredefinedName, predefinedRoles } from "@/lib/chat-room/data";
+import { getRoleAccent } from "@/lib/chat-room/role-colors";
 import { deriveChatRoomTitle } from "@/lib/chat-room/room-title";
 import {
   defaultStorageState,
@@ -513,9 +514,23 @@ export function ChatShell() {
               </div>
               <div className="mx-auto flex max-w-3xl items-center justify-between px-5 py-3 lg:max-w-4xl">
                 <div className="flex flex-wrap gap-2">
-                  {activeRoom.aiInstances.map((instance) => (
+                  {activeRoom.aiInstances.map((instance) => {
+                    const accent = getRoleAccent(instance.name);
+
+                    return (
                     <div key={instance.id} className="relative">
-                      <span className="inline-flex items-center gap-1 rounded-md border border-border-subtle bg-background px-2.5 py-1 text-sm text-text-secondary">
+                      <span
+                        className="inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1 text-sm"
+                        style={{
+                          borderColor: accent.border,
+                          backgroundColor: accent.bg,
+                          color: accent.text,
+                        }}
+                      >
+                        <span
+                          className="h-1.5 w-1.5 rounded-full"
+                          style={{ backgroundColor: accent.dot }}
+                        />
                         {instance.name}
                         <button
                           type="button"
@@ -564,7 +579,8 @@ export function ChatShell() {
                         </div>
                       ) : null}
                     </div>
-                  ))}
+                  );
+                  })}
                 </div>
                 <div className="relative">
                   <button
@@ -745,9 +761,17 @@ export function ChatShell() {
                         <div
                           className="max-w-[82%] rounded-lg border border-border-subtle bg-surface px-4 py-3"
                         >
-                          {!isUser ? (
-                            <p className="mb-2 text-sm font-medium text-accent">
-                              {message.role}
+                          {!isUser && message.role ? (
+                            <p className="mb-2 flex items-center gap-1.5 text-sm font-medium">
+                              <span
+                                className="h-1.5 w-1.5 rounded-full"
+                                style={{
+                                  backgroundColor: getRoleAccent(message.role).dot,
+                                }}
+                              />
+                              <span style={{ color: getRoleAccent(message.role).text }}>
+                                {message.role}
+                              </span>
                             </p>
                           ) : null}
                           <p className="text-sm leading-6 text-text-secondary">

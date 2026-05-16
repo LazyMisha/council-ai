@@ -423,7 +423,7 @@ export function ChatShell() {
         <button
           type="button"
           onClick={createChatRoom}
-          className="mt-4 h-10 w-full rounded-md border border-accent bg-accent text-sm font-medium text-white"
+          className="mt-4 h-10 w-full rounded-md border border-accent bg-surface text-sm font-medium text-accent hover:bg-accent-muted cursor-pointer"
         >
           + New chat room
         </button>
@@ -442,9 +442,9 @@ export function ChatShell() {
                 }}
                 className={`block w-full rounded-md px-3 py-2 text-left text-sm ${
                   activeRoom && room.id === activeRoom.id
-                    ? "bg-accent text-white"
+                    ? "text-foreground font-medium"
                     : "text-text-secondary hover:bg-background"
-                }`}
+                } cursor-pointer`}
               >
                 <span className="line-clamp-1">{room.title}</span>
               </button>
@@ -458,10 +458,10 @@ export function ChatShell() {
           <>
             <div className="shrink-0 border-b border-border-subtle bg-surface">
               <div className="mx-auto flex max-w-3xl items-center justify-between px-5 py-2 lg:max-w-4xl">
-                <h2 className="text-sm font-medium text-text-secondary">
-                  {activeRoom.title}
-                </h2>
-                <div className="relative">
+                <div className="relative flex items-center gap-1">
+                  <h2 className="text-lg font-semibold text-foreground">
+                    {activeRoom.title}
+                  </h2>
                   <button
                     type="button"
                     aria-label="Chat room options"
@@ -471,19 +471,19 @@ export function ChatShell() {
                       setIsRolePickerOpen(false);
                       setIsRoomMenuOpen((open) => !open);
                     }}
-                    className="inline-flex h-7 w-7 items-center justify-center rounded text-text-tertiary hover:bg-surface-muted hover:text-foreground"
+                    className="inline-flex h-6 w-6 items-center justify-center rounded text-text-tertiary hover:bg-surface-muted hover:text-foreground cursor-pointer"
                   >
                     &#x22EE;
                   </button>
                   {isRoomMenuOpen ? (
                     <div
-                      className="absolute right-0 top-8 z-10 w-44 rounded-md border border-border-subtle bg-surface py-1 shadow-sm"
+                      className="absolute left-0 top-full z-10 mt-1 w-44 rounded-md border border-border-subtle bg-surface py-1 shadow-sm"
                       onClick={handlePickerClick}
                     >
                       <button
                         type="button"
                         onClick={startRename}
-                        className="block w-full px-3 py-1.5 text-left text-sm text-text-secondary hover:bg-background"
+                        className="block w-full px-3 py-1.5 text-left text-sm text-text-secondary hover:bg-background cursor-pointer"
                       >
                         Rename
                       </button>
@@ -493,7 +493,7 @@ export function ChatShell() {
                           setConfirmingClear(true);
                           setIsRoomMenuOpen(false);
                         }}
-                        className="block w-full px-3 py-1.5 text-left text-sm text-text-secondary hover:bg-background"
+                        className="block w-full px-3 py-1.5 text-left text-sm text-text-secondary hover:bg-background cursor-pointer"
                       >
                         Clear messages
                       </button>
@@ -503,7 +503,7 @@ export function ChatShell() {
                           setConfirmingDelete(true);
                           setIsRoomMenuOpen(false);
                         }}
-                        className="block w-full px-3 py-1.5 text-left text-sm text-red-500 hover:bg-background"
+                        className="block w-full px-3 py-1.5 text-left text-sm text-red-500 hover:bg-background cursor-pointer"
                       >
                         Delete chat room
                       </button>
@@ -528,7 +528,7 @@ export function ChatShell() {
                               current === instance.id ? null : instance.id,
                             );
                           }}
-                          className="ml-1 inline-flex h-5 w-5 items-center justify-center rounded text-text-tertiary hover:bg-surface-muted hover:text-foreground"
+                          className="ml-1 inline-flex h-5 w-5 items-center justify-center rounded text-text-tertiary hover:bg-surface-muted hover:text-foreground cursor-pointer"
                         >
                           &#x22EE;
                         </button>
@@ -541,7 +541,7 @@ export function ChatShell() {
                           <button
                             type="button"
                             onClick={() => viewInstanceDetails(instance)}
-                            className="block w-full px-3 py-1.5 text-left text-sm text-text-secondary hover:bg-background"
+                            className="block w-full px-3 py-1.5 text-left text-sm text-text-secondary hover:bg-background cursor-pointer"
                           >
                             View details
                           </button>
@@ -549,7 +549,7 @@ export function ChatShell() {
                             <button
                               type="button"
                               onClick={() => startEditInstance(instance)}
-                              className="block w-full px-3 py-1.5 text-left text-sm text-text-secondary hover:bg-background"
+                              className="block w-full px-3 py-1.5 text-left text-sm text-text-secondary hover:bg-background cursor-pointer"
                             >
                               Edit
                             </button>
@@ -557,7 +557,7 @@ export function ChatShell() {
                           <button
                             type="button"
                             onClick={() => removeAIInstance(instance.id)}
-                            className="block w-full px-3 py-1.5 text-left text-sm text-red-500 hover:bg-background"
+                            className="block w-full px-3 py-1.5 text-left text-sm text-red-500 hover:bg-background cursor-pointer"
                           >
                             Remove
                           </button>
@@ -575,7 +575,7 @@ export function ChatShell() {
                       setIsRoomMenuOpen(false);
                       setIsRolePickerOpen((open) => !open);
                     }}
-                    className="h-9 rounded-md border border-accent bg-accent px-3 text-sm font-medium text-white"
+                    className="h-9 rounded-md border border-accent bg-surface px-3 text-sm font-medium text-accent hover:bg-accent-muted cursor-pointer"
                   >
                     + Add AI
                   </button>
@@ -592,7 +592,7 @@ export function ChatShell() {
                             activeTab === "predefined"
                               ? "border-b-2 border-accent text-foreground"
                               : "text-text-secondary"
-                          }`}
+                          } cursor-pointer`}
                         >
                           Predefined
                         </button>
@@ -603,7 +603,7 @@ export function ChatShell() {
                             activeTab === "custom"
                               ? "border-b-2 border-accent text-foreground"
                               : "text-text-secondary"
-                          }`}
+                          } cursor-pointer`}
                         >
                           Custom
                         </button>
@@ -620,7 +620,7 @@ export function ChatShell() {
                                 type="button"
                                 disabled={isAdded}
                                 onClick={() => addPredefinedAIInstance(role)}
-                                className="block w-full rounded-md px-3 py-2 text-left text-sm hover:bg-background disabled:cursor-not-allowed disabled:opacity-50"
+                                className="block w-full rounded-md px-3 py-2 text-left text-sm hover:bg-background disabled:cursor-not-allowed disabled:opacity-50 cursor-pointer"
                               >
                                 <div className="font-medium text-foreground">
                                   {role.name}
@@ -700,7 +700,7 @@ export function ChatShell() {
                           <button
                             type="button"
                             onClick={addCustomAIInstance}
-                            className="h-9 w-full rounded-md border border-accent bg-accent text-sm font-medium text-white"
+                            className="h-9 w-full rounded-md border border-accent bg-surface text-sm font-medium text-accent hover:bg-accent-muted cursor-pointer"
                           >
                             Add AI Instance
                           </button>
@@ -743,22 +743,14 @@ export function ChatShell() {
                         className={`flex ${isUser ? "justify-end" : "justify-start"}`}
                       >
                         <div
-                          className={`max-w-[82%] rounded-lg border px-4 py-3 ${
-                            isUser
-                              ? "border-accent bg-accent text-white"
-                              : "border-border-subtle bg-surface"
-                          }`}
+                          className="max-w-[82%] rounded-lg border border-border-subtle bg-surface px-4 py-3"
                         >
                           {!isUser ? (
                             <p className="mb-2 text-sm font-medium text-accent">
                               {message.role}
                             </p>
                           ) : null}
-                          <p
-                            className={`text-sm leading-6 ${
-                              isUser ? "text-white" : "text-text-secondary"
-                            }`}
-                          >
+                          <p className="text-sm leading-6 text-text-secondary">
                             {message.content}
                           </p>
                         </div>
@@ -797,7 +789,7 @@ export function ChatShell() {
                   />
                   <button
                     type="submit"
-                    className="h-11 rounded-md border border-accent bg-accent px-4 text-sm font-medium text-white"
+                    className="h-11 rounded-md border border-accent bg-surface px-4 text-sm font-medium text-accent hover:bg-accent-muted cursor-pointer"
                   >
                     Send
                   </button>
@@ -811,7 +803,7 @@ export function ChatShell() {
             <button
               type="button"
               onClick={createChatRoom}
-              className="h-10 rounded-md border border-accent bg-accent px-4 text-sm font-medium text-white"
+              className="h-10 rounded-md border border-accent bg-surface px-4 text-sm font-medium text-accent hover:bg-accent-muted cursor-pointer"
             >
               + New chat room
             </button>
@@ -832,7 +824,7 @@ export function ChatShell() {
                 <button
                   type="button"
                   onClick={() => setViewingInstance(null)}
-                  className="text-sm text-text-tertiary hover:text-foreground"
+                  className="text-sm text-text-tertiary hover:text-foreground cursor-pointer"
                 >
                   Close
                 </button>
@@ -866,7 +858,7 @@ export function ChatShell() {
                 <button
                   type="button"
                   onClick={() => setEditingInstance(null)}
-                  className="text-sm text-text-tertiary hover:text-foreground"
+                  className="text-sm text-text-tertiary hover:text-foreground cursor-pointer"
                 >
                   Cancel
                 </button>
@@ -934,7 +926,7 @@ export function ChatShell() {
                 <button
                   type="button"
                   onClick={saveEditInstance}
-                  className="h-9 w-full rounded-md border border-accent bg-accent text-sm font-medium text-white"
+                  className="h-9 w-full rounded-md border border-accent bg-surface text-sm font-medium text-accent hover:bg-accent-muted cursor-pointer"
                 >
                   Save
                 </button>
@@ -957,7 +949,7 @@ export function ChatShell() {
                 <button
                   type="button"
                   onClick={() => setIsRenaming(false)}
-                  className="text-sm text-text-tertiary hover:text-foreground"
+                  className="text-sm text-text-tertiary hover:text-foreground cursor-pointer"
                 >
                   Cancel
                 </button>
@@ -978,7 +970,7 @@ export function ChatShell() {
                 <button
                   type="button"
                   onClick={saveRename}
-                  className="h-9 w-full rounded-md border border-accent bg-accent text-sm font-medium text-white"
+                  className="h-9 w-full rounded-md border border-accent bg-surface text-sm font-medium text-accent hover:bg-accent-muted cursor-pointer"
                 >
                   Save
                 </button>
@@ -1006,14 +998,14 @@ export function ChatShell() {
                 <button
                   type="button"
                   onClick={() => setConfirmingDelete(false)}
-                  className="h-9 flex-1 rounded-md border border-border-subtle bg-background text-sm font-medium text-text-secondary"
+                  className="h-9 flex-1 rounded-md border border-border-subtle bg-background text-sm font-medium text-text-secondary cursor-pointer"
                 >
                   Cancel
                 </button>
                 <button
                   type="button"
                   onClick={executeDeleteRoom}
-                  className="h-9 flex-1 rounded-md border border-red-500 bg-red-500 text-sm font-medium text-white"
+                  className="h-9 flex-1 rounded-md border border-red-500 bg-red-500 text-sm font-medium text-white cursor-pointer"
                 >
                   Delete
                 </button>
@@ -1041,14 +1033,14 @@ export function ChatShell() {
                 <button
                   type="button"
                   onClick={() => setConfirmingClear(false)}
-                  className="h-9 flex-1 rounded-md border border-border-subtle bg-background text-sm font-medium text-text-secondary"
+                  className="h-9 flex-1 rounded-md border border-border-subtle bg-background text-sm font-medium text-text-secondary cursor-pointer"
                 >
                   Cancel
                 </button>
                 <button
                   type="button"
                   onClick={executeClearMessages}
-                  className="h-9 flex-1 rounded-md border border-accent bg-accent text-sm font-medium text-white"
+                  className="h-9 flex-1 rounded-md border border-accent bg-accent-muted text-sm font-medium text-accent hover:bg-accent hover:text-white cursor-pointer"
                 >
                   Clear
                 </button>

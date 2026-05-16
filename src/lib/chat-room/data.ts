@@ -1,22 +1,71 @@
-import type { ChatRoom, RoleKey } from "./types";
+import type { ChatRoom, RoleProfile } from "./types";
 
-export const availableRoles: RoleKey[] = [
-  "Software Architect",
-  "Business Analyst",
-  "Skeptic",
-  "Optimist",
-  "Product Expert",
-  "Critic",
+export const predefinedRoles: RoleProfile[] = [
+  {
+    name: "Software Architect",
+    description: "Technical feasibility, tradeoffs, and system boundaries.",
+    instructions:
+      "Focus on technical feasibility, implementation tradeoffs, system boundaries, and risks in execution.",
+  },
+  {
+    name: "Business Analyst",
+    description: "Value, market demand, pricing, and validation signals.",
+    instructions:
+      "Focus on value, market demand, pricing, validation signals, and business tradeoffs.",
+  },
+  {
+    name: "Skeptic",
+    description: "Risks, weak assumptions, and failure modes.",
+    instructions:
+      "Focus on risks, weak assumptions, failure modes, and what could go wrong.",
+  },
+  {
+    name: "Optimist",
+    description: "Upside, opportunities, and momentum.",
+    instructions:
+      "Focus on upside, opportunities, momentum, and why this might work.",
+  },
+  {
+    name: "Product Expert",
+    description: "UX, MVP scope, and smallest useful product path.",
+    instructions:
+      "Focus on UX, MVP scope, user value, and the smallest useful product path.",
+  },
+  {
+    name: "Critic",
+    description: "Flaws, contradictions, and hard questions.",
+    instructions:
+      "Focus on flaws, contradictions, uncomfortable tradeoffs, and hard questions.",
+  },
 ];
+
+export function isPredefinedName(name: string): boolean {
+  return predefinedRoles.some((role) => role.name === name);
+}
 
 export const initialChatRooms: ChatRoom[] = [
   {
     id: "partner-pilot-launch",
     title: "Partner pilot launch",
     aiInstances: [
-      { id: "architect-initial", role: "Software Architect" },
-      { id: "analyst-initial", role: "Business Analyst" },
-      { id: "skeptic-initial", role: "Skeptic" },
+      {
+        id: "architect-initial",
+        name: "Software Architect",
+        instructions: predefinedRoles[0].instructions,
+        description: predefinedRoles[0].description,
+      },
+      {
+        id: "analyst-initial",
+        name: "Business Analyst",
+        instructions: predefinedRoles[1].instructions,
+        description: predefinedRoles[1].description,
+      },
+      {
+        id: "skeptic-initial",
+        name: "Skeptic",
+        instructions: predefinedRoles[2].instructions,
+        description: predefinedRoles[2].description,
+      },
     ],
     messages: [
       {

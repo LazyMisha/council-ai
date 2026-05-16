@@ -1,4 +1,4 @@
-export type RoleKey =
+export type PredefinedRoleKey =
   | "Software Architect"
   | "Business Analyst"
   | "Skeptic"
@@ -8,14 +8,16 @@ export type RoleKey =
 
 export type AIInstance = {
   id: string;
-  role: RoleKey;
+  name: string;
+  instructions: string;
+  description?: string;
 };
 
 export type Message = {
   id: string;
   authorType: "user" | "ai" | "system";
   content: string;
-  role?: RoleKey;
+  role?: string;
 };
 
 export type ChatRoom = {
@@ -23,4 +25,10 @@ export type ChatRoom = {
   title: string;
   aiInstances: AIInstance[];
   messages: Message[];
+};
+
+export type RoleProfile = {
+  name: PredefinedRoleKey;
+  description: string;
+  instructions: string;
 };

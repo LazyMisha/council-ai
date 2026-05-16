@@ -39,7 +39,10 @@ export async function generateAIResponses({
       aiInstances.map(async (instance) => {
         const response = await client.responses.create({
           model,
-          instructions: buildRoleInstructions(instance.role),
+          instructions: buildRoleInstructions({
+            name: instance.name,
+            instructions: instance.instructions,
+          }),
           input: buildRoleInput({
             latestUserMessage,
             recentMessages,
@@ -51,8 +54,8 @@ export async function generateAIResponses({
         return {
           id: `${userMessage.id}-${instance.id}-openai-response`,
           authorType: "ai" as const,
-          role: instance.role,
-          content: content || fallbackEmptyResponse(instance.role),
+          role: instance.name,
+          content: content || fallbackEmptyResponse(instance.name),
         };
       }),
     );
@@ -75,6 +78,6 @@ function createUserMessage(content: string): Message {
   };
 }
 
-function fallbackEmptyResponse(role: AIInstance["role"]) {
-  return `${role} does not have a useful response yet.`;
+function fallbackEmptyResponse(roleName: string) {
+  return `${roleName} does not have a useful response yet.`;
 }

@@ -1,23 +1,41 @@
-import type { ChatRoom, Message, AIInstance, RoleKey } from "./types";
-import { initialChatRooms } from "./data";
+import type { ChatRoom, Message, AIInstance } from "./types";
+import { initialChatRooms, predefinedRoles } from "./data";
 
 const STORAGE_KEY = "council-ai-chat-rooms";
-
-const VALID_ROLE_KEYS: RoleKey[] = [
-  "Software Architect",
-  "Business Analyst",
-  "Skeptic",
-  "Optimist",
-  "Product Expert",
-  "Critic",
-];
 
 function isNonEmptyString(value: unknown): value is string {
   return typeof value === "string" && value.length > 0;
 }
 
-export function isValidRoleKey(role: unknown): role is RoleKey {
-  return typeof role === "string" && VALID_ROLE_KEYS.includes(role as RoleKey);
+function migrateAIInstance(instance: Record<string, unknown>): AIInstance {
+  const id = instance.id;
+  const role = instance.role;
+
+  if (isNonEmptyString(id) && isNonEmptyString(role)) {
+    const predefined = predefinedRoles.find((pr) => pr.name === role);
+
+    return {
+      id,
+      name: role,
+      instructions: predefined?.instructions ?? "",
+      description: predefined?.description,
+    };
+  }
+
+  return {
+    id: isNonEmptyString(id) ? id : `ai-${Date.now()}`,
+    name: isNonEmptyString(instance.name)
+      ? instance.name
+      : isNonEmptyString(role)
+        ? role
+        : "Unnamed",
+    instructions: isNonEmptyString(instance.instructions)
+      ? instance.instructions
+      : "",
+    description: isNonEmptyString(instance.description)
+      ? instance.description
+      : undefined,
+  };
 }
 
 export function isValidMessage(item: unknown): item is Message {
@@ -29,10 +47,15 @@ export function isValidMessage(item: unknown): item is Message {
 
   if (!isNonEmptyString(message.id)) return false;
   if (!isNonEmptyString(message.content)) return false;
-  if (message.authorType !== "user" && message.authorType !== "ai" && message.authorType !== "system") return false;
+  if (
+    message.authorType !== "user" &&
+    message.authorType !== "ai" &&
+    message.authorType !== "system"
+  )
+    return false;
 
   if (message.authorType === "ai") {
-    if (!isValidRoleKey(message.role)) return false;
+    if (!isNonEmptyString(message.role)) return false;
   }
 
   return true;
@@ -46,7 +69,8 @@ export function isValidAIInstance(item: unknown): item is AIInstance {
   const instance = item as Record<string, unknown>;
 
   if (!isNonEmptyString(instance.id)) return false;
-  if (!isValidRoleKey(instance.role)) return false;
+  if (!isNonEmptyString(instance.name)) return false;
+  if (!isNonEmptyString(instance.instructions)) return false;
 
   return true;
 }
@@ -87,10 +111,46 @@ function isValidStorageState(item: unknown): item is StorageState {
   const state = item as Record<string, unknown>;
 
   if (!Array.isArray(state.chatRooms)) return false;
-  if (!state.chatRooms.every(isValidChatRoom)) return false;
   if (!isNonEmptyString(state.activeRoomId)) return false;
 
   return true;
+}
+
+function migrateStorageState(item: Record<string, unknown>): StorageState {
+  const rawRooms = Array.isArray(item.chatRooms) ? item.chatRooms : [];
+
+  const chatRooms = rawRooms.map((room) => {
+    const roomRecord = room as Record<string, unknown>;
+
+    const rawInstances = Array.isArray(roomRecord.aiInstances)
+      ? roomRecord.aiInstances
+      : [];
+    const rawMessages = Array.isArray(roomRecord.messages)
+      ? roomRecord.messages
+      : [];
+
+    return {
+      id: isNonEmptyString(roomRecord.id) ? roomRecord.id : `room-${Date.now()}`,
+      title: isNonEmptyString(roomRecord.title)
+        ? roomRecord.title
+        : "Untitled chat room",
+      aiInstances: rawInstances.map((instance) =>
+        migrateAIInstance(instance as Record<string, unknown>),
+      ),
+      messages: rawMessages.filter(isValidMessage),
+    };
+  });
+
+  const activeRoomId = isNonEmptyString(item.activeRoomId)
+    ? item.activeRoomId
+    : chatRooms[0]?.id ?? "";
+
+  const activeRoomExists = chatRooms.some((room) => room.id === activeRoomId);
+
+  return {
+    chatRooms,
+    activeRoomId: activeRoomExists ? activeRoomId : chatRooms[0]?.id ?? "",
+  };
 }
 
 export function loadStorageState(): StorageState {
@@ -111,18 +171,9 @@ export function loadStorageState(): StorageState {
       return defaultStorageState;
     }
 
-    const activeRoomExists = parsed.chatRooms.some(
-      (room) => room.id === parsed.activeRoomId,
-    );
+    const migrated = migrateStorageState(parsed as Record<string, unknown>);
 
-    if (!activeRoomExists) {
-      return {
-        chatRooms: parsed.chatRooms,
-        activeRoomId: parsed.chatRooms[0]?.id ?? "",
-      };
-    }
-
-    return parsed;
+    return migrated;
   } catch {
     return defaultStorageState;
   }

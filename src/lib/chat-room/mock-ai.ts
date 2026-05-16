@@ -1,4 +1,5 @@
-import type { AIInstance, Message, RoleKey } from "./types";
+import { predefinedRoles } from "./data";
+import type { AIInstance, Message } from "./types";
 
 export const noAIInstancesHint = "Add AI instances to start a discussion.";
 
@@ -34,23 +35,29 @@ export function generateMockAIResponses({
     messages: aiInstances.map((instance) => ({
       id: `${latestUserMessage.id}-${instance.id}-response`,
       authorType: "ai",
-      role: instance.role,
-      content: createRoleResponse(instance.role, latestUserMessage.content),
+      role: instance.name,
+      content: createRoleResponse(instance.name, latestUserMessage.content),
     })),
   };
 }
 
-function createRoleResponse(role: RoleKey, topic: string) {
+function createRoleResponse(roleName: string, topic: string) {
   const compactTopic = topic.trim().replace(/\s+/g, " ");
 
-  const responses: Record<RoleKey, string> = {
-    "Software Architect": `From a technical angle, "${compactTopic}" should start with the smallest implementation path and clear integration boundaries.`,
-    "Business Analyst": `The value case for "${compactTopic}" depends on validation signals, market timing, and whether success can be measured quickly.`,
-    Skeptic: `The weak assumption in "${compactTopic}" is that the main risk is already known. Pressure-test dependencies before committing.`,
-    Optimist: `"${compactTopic}" has upside if the team keeps momentum and turns early interest into visible opportunities.`,
-    "Product Expert": `For "${compactTopic}", keep the MVP focused on the core user moment and avoid adding UX surface area too early.`,
-    Critic: `The tradeoff in "${compactTopic}" is that clarity may expose flaws. Name those flaws before they become product debt.`,
-  };
+  const predefined = predefinedRoles.find((pr) => pr.name === roleName);
 
-  return responses[role];
+  if (predefined) {
+    const responses: Record<string, string> = {
+      "Software Architect": `From a technical angle, "${compactTopic}" should start with the smallest implementation path and clear integration boundaries.`,
+      "Business Analyst": `The value case for "${compactTopic}" depends on validation signals, market timing, and whether success can be measured quickly.`,
+      Skeptic: `The weak assumption in "${compactTopic}" is that the main risk is already known. Pressure-test dependencies before committing.`,
+      Optimist: `"${compactTopic}" has upside if the team keeps momentum and turns early interest into visible opportunities.`,
+      "Product Expert": `For "${compactTopic}", keep the MVP focused on the core user moment and avoid adding UX surface area too early.`,
+      Critic: `The tradeoff in "${compactTopic}" is that clarity may expose flaws. Name those flaws before they become product debt.`,
+    };
+
+    return responses[roleName];
+  }
+
+  return `${roleName} sees "${compactTopic}" as a topic worth examining from their specific perspective.`;
 }

@@ -2,16 +2,14 @@
 
 import { useEffect, useMemo, useState } from "react";
 import type { FormEvent, KeyboardEvent } from "react";
-import {
-  availableRoles,
-} from "@/lib/chat-room/data";
+import { isPredefinedName, predefinedRoles } from "@/lib/chat-room/data";
 import { deriveChatRoomTitle } from "@/lib/chat-room/room-title";
 import {
   defaultStorageState,
   loadStorageState,
   saveStorageState,
 } from "@/lib/chat-room/storage";
-import type { ChatRoom, Message, RoleKey } from "@/lib/chat-room/types";
+import type { AIInstance, ChatRoom, Message } from "@/lib/chat-room/types";
 
 const newId = (prefix: string) =>
   `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
@@ -26,6 +24,34 @@ export function ChatShell() {
   const [draft, setDraft] = useState("");
   const [isRolePickerOpen, setIsRolePickerOpen] = useState(false);
   const [thinkingRoomIds, setThinkingRoomIds] = useState<string[]>([]);
+  const [customName, setCustomName] = useState("");
+  const [customInstructions, setCustomInstructions] = useState("");
+  const [customDescription, setCustomDescription] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<"predefined" | "custom">(
+    "predefined",
+  );
+
+  const [openMenuInstanceId, setOpenMenuInstanceId] = useState<string | null>(
+    null,
+  );
+  const [viewingInstance, setViewingInstance] = useState<AIInstance | null>(
+    null,
+  );
+  const [editingInstance, setEditingInstance] = useState<AIInstance | null>(
+    null,
+  );
+  const [editName, setEditName] = useState("");
+  const [editInstructions, setEditInstructions] = useState("");
+  const [editDescription, setEditDescription] = useState("");
+  const [editError, setEditError] = useState<string | null>(null);
+
+  const [isRoomMenuOpen, setIsRoomMenuOpen] = useState(false);
+  const [isRenaming, setIsRenaming] = useState(false);
+  const [renameValue, setRenameValue] = useState("");
+  const [renameError, setRenameError] = useState<string | null>(null);
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
+  const [confirmingClear, setConfirmingClear] = useState(false);
 
   useEffect(() => {
     const state = loadStorageState();
@@ -40,13 +66,28 @@ export function ChatShell() {
     saveStorageState({ chatRooms, activeRoomId });
   }, [chatRooms, activeRoomId]);
 
+  useEffect(() => {
+    const handleDocumentClick = () => {
+      setOpenMenuInstanceId(null);
+      setIsRolePickerOpen(false);
+      setIsRoomMenuOpen(false);
+    };
+
+    document.addEventListener("click", handleDocumentClick);
+    return () => document.removeEventListener("click", handleDocumentClick);
+  }, []);
+
   const activeRoom = useMemo(
     () => chatRooms.find((room) => room.id === activeRoomId) ?? chatRooms[0],
     [activeRoomId, chatRooms],
   );
 
-  const activeRoles = activeRoom.aiInstances.map((instance) => instance.role);
-  const isThinking = thinkingRoomIds.includes(activeRoom.id);
+  const activeNames = activeRoom
+    ? activeRoom.aiInstances.map((instance) => instance.name)
+    : [];
+  const isThinking = activeRoom
+    ? thinkingRoomIds.includes(activeRoom.id)
+    : false;
 
   const createChatRoom = () => {
     const room: ChatRoom = {
@@ -60,10 +101,143 @@ export function ChatShell() {
     setActiveRoomId(room.id);
     setDraft("");
     setIsRolePickerOpen(false);
+    resetCustomForm();
+    closeRoomMenu();
   };
 
-  const addAIInstance = (role: RoleKey) => {
-    if (activeRoles.includes(role)) {
+  const resetCustomForm = () => {
+    setCustomName("");
+    setCustomInstructions("");
+    setCustomDescription("");
+    setError(null);
+    setActiveTab("predefined");
+  };
+
+  const closeRolePicker = () => {
+    setIsRolePickerOpen(false);
+    resetCustomForm();
+  };
+
+  const closeRoomMenu = () => {
+    setIsRoomMenuOpen(false);
+    setIsRenaming(false);
+    setRenameValue("");
+    setRenameError(null);
+    setConfirmingDelete(false);
+    setConfirmingClear(false);
+  };
+
+  const addPredefinedAIInstance = (role: (typeof predefinedRoles)[number]) => {
+    if (!activeRoom || activeNames.includes(role.name)) {
+      return;
+    }
+
+    const instance: AIInstance = {
+      id: newId("ai-instance"),
+      name: role.name,
+      instructions: role.instructions,
+      description: role.description,
+    };
+
+    addInstance(instance);
+  };
+
+  const addCustomAIInstance = () => {
+    const name = customName.trim();
+    const instructions = customInstructions.trim();
+
+    if (!name) {
+      setError("Name is required.");
+      return;
+    }
+
+    if (!instructions) {
+      setError("Instructions are required.");
+      return;
+    }
+
+    if (activeNames.includes(name)) {
+      setError("An AI instance with this name already exists.");
+      return;
+    }
+
+    const instance: AIInstance = {
+      id: newId("ai-instance"),
+      name,
+      instructions,
+      description: customDescription.trim() || undefined,
+    };
+
+    addInstance(instance);
+  };
+
+  const addInstance = (instance: AIInstance) => {
+    if (!activeRoom) return;
+
+    setChatRooms((rooms) =>
+      rooms.map((room) =>
+        room.id === activeRoom.id
+          ? { ...room, aiInstances: [...room.aiInstances, instance] }
+          : room,
+      ),
+    );
+    closeRolePicker();
+  };
+
+  const removeAIInstance = (instanceId: string) => {
+    if (!activeRoom) return;
+
+    setChatRooms((rooms) =>
+      rooms.map((room) =>
+        room.id === activeRoom.id
+          ? {
+              ...room,
+              aiInstances: room.aiInstances.filter(
+                (instance) => instance.id !== instanceId,
+              ),
+            }
+          : room,
+      ),
+    );
+    setOpenMenuInstanceId(null);
+  };
+
+  const viewInstanceDetails = (instance: AIInstance) => {
+    setViewingInstance(instance);
+    setOpenMenuInstanceId(null);
+  };
+
+  const startEditInstance = (instance: AIInstance) => {
+    setEditingInstance(instance);
+    setEditName(instance.name);
+    setEditInstructions(instance.instructions);
+    setEditDescription(instance.description ?? "");
+    setEditError(null);
+    setOpenMenuInstanceId(null);
+  };
+
+  const saveEditInstance = () => {
+    if (!editingInstance || !activeRoom) return;
+
+    const name = editName.trim();
+    const instructions = editInstructions.trim();
+
+    if (!name) {
+      setEditError("Name is required.");
+      return;
+    }
+
+    if (!instructions) {
+      setEditError("Instructions are required.");
+      return;
+    }
+
+    const otherNames = activeRoom.aiInstances
+      .filter((instance) => instance.id !== editingInstance.id)
+      .map((instance) => instance.name);
+
+    if (otherNames.includes(name)) {
+      setEditError("An AI instance with this name already exists.");
       return;
     }
 
@@ -72,21 +246,78 @@ export function ChatShell() {
         room.id === activeRoom.id
           ? {
               ...room,
-              aiInstances: [
-                ...room.aiInstances,
-                { id: newId("ai-instance"), role },
-              ],
+              aiInstances: room.aiInstances.map((instance) =>
+                instance.id === editingInstance.id
+                  ? {
+                      ...instance,
+                      name,
+                      instructions,
+                      description: editDescription.trim() || undefined,
+                    }
+                  : instance,
+              ),
             }
           : room,
       ),
     );
-    setIsRolePickerOpen(false);
+    setEditingInstance(null);
+    setEditError(null);
+  };
+
+  const startRename = () => {
+    if (!activeRoom) return;
+    setIsRenaming(true);
+    setRenameValue(activeRoom.title);
+    setRenameError(null);
+    setIsRoomMenuOpen(false);
+  };
+
+  const saveRename = () => {
+    const title = renameValue.trim();
+    if (!title) {
+      setRenameError("Name cannot be empty.");
+      return;
+    }
+    if (!activeRoom) return;
+
+    setChatRooms((rooms) =>
+      rooms.map((room) =>
+        room.id === activeRoom.id ? { ...room, title } : room,
+      ),
+    );
+    setIsRenaming(false);
+    setRenameError(null);
+  };
+
+  const executeDeleteRoom = () => {
+    if (!activeRoom) return;
+
+    const deletedId = activeRoom.id;
+    const remaining = chatRooms.filter((room) => room.id !== deletedId);
+    const nextActive = remaining[0]?.id ?? "";
+
+    setChatRooms(remaining);
+    setActiveRoomId(nextActive);
+    setConfirmingDelete(false);
+    setIsRoomMenuOpen(false);
+  };
+
+  const executeClearMessages = () => {
+    if (!activeRoom) return;
+
+    setChatRooms((rooms) =>
+      rooms.map((room) =>
+        room.id === activeRoom.id ? { ...room, messages: [] } : room,
+      ),
+    );
+    setConfirmingClear(false);
+    setIsRoomMenuOpen(false);
   };
 
   const sendMessage = async () => {
     const content = draft.trim();
 
-    if (!content) {
+    if (!content || !activeRoom) {
       return;
     }
 
@@ -178,6 +409,10 @@ export function ChatShell() {
     }
   };
 
+  const handlePickerClick = (event: React.MouseEvent) => {
+    event.nativeEvent.stopImmediatePropagation();
+  };
+
   return (
     <main className="flex h-screen overflow-hidden bg-background text-foreground">
       <aside className="hidden w-72 shrink-0 overflow-hidden border-r border-border-subtle bg-surface p-4 md:flex md:flex-col">
@@ -188,179 +423,639 @@ export function ChatShell() {
         <button
           type="button"
           onClick={createChatRoom}
-          className="mt-5 shrink-0 h-10 rounded-md border border-accent bg-accent px-3 text-left text-sm font-medium text-white"
+          className="mt-4 h-10 w-full rounded-md border border-accent bg-accent text-sm font-medium text-white"
         >
           + New chat room
         </button>
 
-        <nav aria-label="Chat rooms" className="mt-6 flex-1 min-h-0 space-y-1 overflow-y-auto">
-          {chatRooms.map((chatRoom) => {
-            const isActive = chatRoom.id === activeRoom.id;
-
-            return (
+        <div className="mt-4 flex-1 overflow-y-auto">
+          <div className="space-y-1">
+            {chatRooms.map((room) => (
               <button
-                key={chatRoom.id}
+                key={room.id}
                 type="button"
-                onClick={() => setActiveRoomId(chatRoom.id)}
+                onClick={() => {
+                  setActiveRoomId(room.id);
+                  setOpenMenuInstanceId(null);
+                  setIsRolePickerOpen(false);
+                  setIsRoomMenuOpen(false);
+                }}
                 className={`block w-full rounded-md px-3 py-2 text-left text-sm ${
-                  isActive
-                    ? "bg-accent-muted text-accent"
-                    : "text-text-secondary hover:bg-background hover:text-foreground"
+                  activeRoom && room.id === activeRoom.id
+                    ? "bg-accent text-white"
+                    : "text-text-secondary hover:bg-background"
                 }`}
               >
-                {chatRoom.title}
+                <span className="line-clamp-1">{room.title}</span>
               </button>
-            );
-          })}
-        </nav>
+            ))}
+          </div>
+        </div>
       </aside>
 
-      <section className="flex min-w-0 flex-1 flex-col overflow-hidden">
-        <div className="flex shrink-0 items-center justify-between border-b border-border-subtle bg-surface px-5 py-4">
-          <div className="flex items-center gap-3">
-            <h2 className="text-sm font-medium text-text-primary">
-              {activeRoom.title}
-            </h2>
-            <span className="rounded-full bg-accent-muted px-2 py-0.5 text-xs font-medium text-accent">
-              {activeRoom.aiInstances.length}
-            </span>
-          </div>
+      <section className="flex flex-1 flex-col overflow-hidden">
+        {activeRoom ? (
+          <>
+            <div className="shrink-0 border-b border-border-subtle bg-surface">
+              <div className="mx-auto flex max-w-3xl items-center justify-between px-5 py-2 lg:max-w-4xl">
+                <h2 className="text-sm font-medium text-text-secondary">
+                  {activeRoom.title}
+                </h2>
+                <div className="relative">
+                  <button
+                    type="button"
+                    aria-label="Chat room options"
+                    onClick={(event) => {
+                      event.nativeEvent.stopImmediatePropagation();
+                      setOpenMenuInstanceId(null);
+                      setIsRolePickerOpen(false);
+                      setIsRoomMenuOpen((open) => !open);
+                    }}
+                    className="inline-flex h-7 w-7 items-center justify-center rounded text-text-tertiary hover:bg-surface-muted hover:text-foreground"
+                  >
+                    &#x22EE;
+                  </button>
+                  {isRoomMenuOpen ? (
+                    <div
+                      className="absolute right-0 top-8 z-10 w-44 rounded-md border border-border-subtle bg-surface py-1 shadow-sm"
+                      onClick={handlePickerClick}
+                    >
+                      <button
+                        type="button"
+                        onClick={startRename}
+                        className="block w-full px-3 py-1.5 text-left text-sm text-text-secondary hover:bg-background"
+                      >
+                        Rename
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setConfirmingClear(true);
+                          setIsRoomMenuOpen(false);
+                        }}
+                        className="block w-full px-3 py-1.5 text-left text-sm text-text-secondary hover:bg-background"
+                      >
+                        Clear messages
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setConfirmingDelete(true);
+                          setIsRoomMenuOpen(false);
+                        }}
+                        className="block w-full px-3 py-1.5 text-left text-sm text-red-500 hover:bg-background"
+                      >
+                        Delete chat room
+                      </button>
+                    </div>
+                  ) : null}
+                </div>
+              </div>
+              <div className="mx-auto flex max-w-3xl items-center justify-between px-5 py-3 lg:max-w-4xl">
+                <div className="flex flex-wrap gap-2">
+                  {activeRoom.aiInstances.map((instance) => (
+                    <div key={instance.id} className="relative">
+                      <span className="inline-flex items-center gap-1 rounded-md border border-border-subtle bg-background px-2.5 py-1 text-sm text-text-secondary">
+                        {instance.name}
+                        <button
+                          type="button"
+                          aria-label={`${instance.name} options`}
+                          onClick={(event) => {
+                            event.nativeEvent.stopImmediatePropagation();
+                            setIsRolePickerOpen(false);
+                            setIsRoomMenuOpen(false);
+                            setOpenMenuInstanceId((current) =>
+                              current === instance.id ? null : instance.id,
+                            );
+                          }}
+                          className="ml-1 inline-flex h-5 w-5 items-center justify-center rounded text-text-tertiary hover:bg-surface-muted hover:text-foreground"
+                        >
+                          &#x22EE;
+                        </button>
+                      </span>
+                      {openMenuInstanceId === instance.id ? (
+                        <div
+                          className="absolute left-0 top-full z-10 mt-1 w-40 rounded-md border border-border-subtle bg-surface py-1 shadow-sm"
+                          onClick={handlePickerClick}
+                        >
+                          <button
+                            type="button"
+                            onClick={() => viewInstanceDetails(instance)}
+                            className="block w-full px-3 py-1.5 text-left text-sm text-text-secondary hover:bg-background"
+                          >
+                            View details
+                          </button>
+                          {!isPredefinedName(instance.name) ? (
+                            <button
+                              type="button"
+                              onClick={() => startEditInstance(instance)}
+                              className="block w-full px-3 py-1.5 text-left text-sm text-text-secondary hover:bg-background"
+                            >
+                              Edit
+                            </button>
+                          ) : null}
+                          <button
+                            type="button"
+                            onClick={() => removeAIInstance(instance.id)}
+                            className="block w-full px-3 py-1.5 text-left text-sm text-red-500 hover:bg-background"
+                          >
+                            Remove
+                          </button>
+                        </div>
+                      ) : null}
+                    </div>
+                  ))}
+                </div>
+                <div className="relative">
+                  <button
+                    type="button"
+                    onClick={(event) => {
+                      event.nativeEvent.stopImmediatePropagation();
+                      setOpenMenuInstanceId(null);
+                      setIsRoomMenuOpen(false);
+                      setIsRolePickerOpen((open) => !open);
+                    }}
+                    className="h-9 rounded-md border border-accent bg-accent px-3 text-sm font-medium text-white"
+                  >
+                    + Add AI
+                  </button>
+                  {isRolePickerOpen ? (
+                    <div
+                      className="absolute right-0 top-10 z-10 w-80 rounded-md border border-border-subtle bg-surface p-4 shadow-sm"
+                      onClick={handlePickerClick}
+                    >
+                      <div className="mb-3 flex border-b border-border-subtle">
+                        <button
+                          type="button"
+                          onClick={() => setActiveTab("predefined")}
+                          className={`px-3 pb-2 text-sm font-medium ${
+                            activeTab === "predefined"
+                              ? "border-b-2 border-accent text-foreground"
+                              : "text-text-secondary"
+                          }`}
+                        >
+                          Predefined
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setActiveTab("custom")}
+                          className={`px-3 pb-2 text-sm font-medium ${
+                            activeTab === "custom"
+                              ? "border-b-2 border-accent text-foreground"
+                              : "text-text-secondary"
+                          }`}
+                        >
+                          Custom
+                        </button>
+                      </div>
 
-          <div className="flex items-center gap-3">
-            <div className="flex items-center gap-2">
-              {activeRoom.aiInstances.map((instance) => (
-                <span
-                  key={instance.id}
-                  className="inline-flex items-center rounded-full border border-border-subtle bg-background px-2.5 py-1 text-xs font-medium text-text-secondary"
-                >
-                  {instance.role}
-                </span>
-              ))}
+                      {activeTab === "predefined" ? (
+                        <div className="space-y-1">
+                          {predefinedRoles.map((role) => {
+                            const isAdded = activeNames.includes(role.name);
+
+                            return (
+                              <button
+                                key={role.name}
+                                type="button"
+                                disabled={isAdded}
+                                onClick={() => addPredefinedAIInstance(role)}
+                                className="block w-full rounded-md px-3 py-2 text-left text-sm hover:bg-background disabled:cursor-not-allowed disabled:opacity-50"
+                              >
+                                <div className="font-medium text-foreground">
+                                  {role.name}
+                                  {isAdded ? " added" : ""}
+                                </div>
+                                <div className="mt-0.5 text-xs text-text-tertiary">
+                                  {role.description}
+                                </div>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      ) : (
+                        <div className="space-y-3">
+                          <div>
+                            <label
+                              htmlFor="custom-name"
+                              className="mb-1 block text-sm text-text-secondary"
+                            >
+                              Name
+                            </label>
+                            <input
+                              id="custom-name"
+                              type="text"
+                              value={customName}
+                              onChange={(event) => {
+                                setCustomName(event.target.value);
+                                setError(null);
+                              }}
+                              placeholder="e.g. Legal Reviewer"
+                              className="h-9 w-full rounded-md border border-border-subtle bg-background px-3 text-sm outline-none placeholder:text-text-tertiary"
+                            />
+                          </div>
+                          <div>
+                            <label
+                              htmlFor="custom-instructions"
+                              className="mb-1 block text-sm text-text-secondary"
+                            >
+                              Instructions
+                            </label>
+                            <textarea
+                              id="custom-instructions"
+                              value={customInstructions}
+                              onChange={(event) => {
+                                setCustomInstructions(event.target.value);
+                                setError(null);
+                              }}
+                              placeholder="What should this AI instance focus on?"
+                              rows={3}
+                              className="w-full resize-none rounded-md border border-border-subtle bg-background px-3 py-2 text-sm outline-none placeholder:text-text-tertiary"
+                            />
+                          </div>
+                          <div>
+                            <label
+                              htmlFor="custom-description"
+                              className="mb-1 block text-sm text-text-secondary"
+                            >
+                              Description{" "}
+                              <span className="text-text-tertiary">(optional)</span>
+                            </label>
+                            <input
+                              id="custom-description"
+                              type="text"
+                              value={customDescription}
+                              onChange={(event) =>
+                                setCustomDescription(event.target.value)
+                              }
+                              placeholder="Short description"
+                              className="h-9 w-full rounded-md border border-border-subtle bg-background px-3 text-sm outline-none placeholder:text-text-tertiary"
+                            />
+                          </div>
+
+                          {error ? (
+                            <p className="text-sm text-red-500">{error}</p>
+                          ) : null}
+
+                          <button
+                            type="button"
+                            onClick={addCustomAIInstance}
+                            className="h-9 w-full rounded-md border border-accent bg-accent text-sm font-medium text-white"
+                          >
+                            Add AI Instance
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  ) : null}
+                </div>
+              </div>
             </div>
-            <div className="relative">
-              <button
-                type="button"
-                onClick={() => setIsRolePickerOpen((open) => !open)}
-                className="h-9 rounded-md border border-accent bg-accent px-3 text-sm font-medium text-white"
-              >
-                + Add AI
-              </button>
-              {isRolePickerOpen ? (
-                <div className="absolute right-0 top-9 z-10 w-56 rounded-md border border-border-subtle bg-surface p-2 shadow-sm">
-                  {availableRoles.map((role) => {
-                    const isAdded = activeRoles.includes(role);
+
+            <div className="min-h-0 flex-1 overflow-y-auto px-5 py-10">
+              <div className="mx-auto max-w-3xl lg:max-w-4xl">
+                {activeRoom.messages.length === 0 ? (
+                  <div className="mb-10 text-center">
+                    <h2 className="text-3xl font-semibold">
+                      Create a chat room to start a discussion
+                    </h2>
+                  </div>
+                ) : null}
+
+                <div className="space-y-5">
+                  {activeRoom.messages.map((message) => {
+                    const isUser = message.authorType === "user";
+
+                    if (message.authorType === "system") {
+                      return (
+                        <p
+                          key={message.id}
+                          className="text-sm text-text-tertiary"
+                        >
+                          {message.content}
+                        </p>
+                      );
+                    }
 
                     return (
-                      <button
-                        key={role}
-                        type="button"
-                        disabled={isAdded}
-                        onClick={() => addAIInstance(role)}
-                        className="block w-full rounded-md px-3 py-2 text-left text-sm text-text-secondary hover:bg-background hover:text-foreground disabled:cursor-not-allowed disabled:text-text-tertiary"
+                      <article
+                        key={message.id}
+                        className={`flex ${isUser ? "justify-end" : "justify-start"}`}
                       >
-                        {role}
-                        {isAdded ? " added" : ""}
-                      </button>
+                        <div
+                          className={`max-w-[82%] rounded-lg border px-4 py-3 ${
+                            isUser
+                              ? "border-accent bg-accent text-white"
+                              : "border-border-subtle bg-surface"
+                          }`}
+                        >
+                          {!isUser ? (
+                            <p className="mb-2 text-sm font-medium text-accent">
+                              {message.role}
+                            </p>
+                          ) : null}
+                          <p
+                            className={`text-sm leading-6 ${
+                              isUser ? "text-white" : "text-text-secondary"
+                            }`}
+                          >
+                            {message.content}
+                          </p>
+                        </div>
+                      </article>
                     );
                   })}
-                </div>
-              ) : null}
-            </div>
-          </div>
-        </div>
 
-        <div className="flex-1 min-h-0 overflow-y-auto px-5 py-10">
-          <div className="mx-auto max-w-3xl lg:max-w-4xl">
-            {activeRoom.messages.length === 0 ? (
-              <div className="mb-10 text-center">
-                <h2 className="text-3xl font-semibold">
-                  Create a chat room to start a discussion
-                </h2>
-              </div>
-            ) : null}
-
-            <div className="space-y-5">
-              {activeRoom.messages.map((message) => {
-                const isUser = message.authorType === "user";
-
-                if (message.authorType === "system") {
-                  return (
-                    <p
-                      key={message.id}
-                      className="text-sm text-text-tertiary"
-                    >
-                      {message.content}
+                  {isThinking ? (
+                    <p className="text-sm text-text-tertiary">
+                      AI instances are thinking...
                     </p>
-                  );
-                }
+                  ) : null}
+                </div>
+              </div>
+            </div>
 
-                return (
-                  <article
-                    key={message.id}
-                    className={`flex ${isUser ? "justify-end" : "justify-start"}`}
+            <div className="shrink-0 border-t border-border-subtle bg-surface px-5 pb-5 pt-4">
+              <div className="mx-auto max-w-3xl lg:max-w-4xl">
+                {activeRoom.aiInstances.length === 0 ? (
+                  <p className="mb-3 text-sm text-text-tertiary">
+                    Add AI instances to start a discussion.
+                  </p>
+                ) : null}
+
+                <form
+                  onSubmit={handleSubmit}
+                  className="flex gap-3 rounded-lg border border-border-subtle bg-surface p-3"
+                >
+                  <input
+                    value={draft}
+                    onChange={(event) => setDraft(event.target.value)}
+                    onKeyDown={handleInputKeyDown}
+                    aria-label="Start a topic or reply"
+                    placeholder="Start a topic or reply..."
+                    className="h-11 min-w-0 flex-1 bg-transparent px-2 text-sm outline-none placeholder:text-text-tertiary"
+                  />
+                  <button
+                    type="submit"
+                    className="h-11 rounded-md border border-accent bg-accent px-4 text-sm font-medium text-white"
                   >
-                    <div
-                      className={`max-w-[82%] rounded-lg border px-4 py-3 ${
-                        isUser
-                          ? "border-accent bg-accent text-white"
-                          : "border-border-subtle bg-surface"
-                      }`}
-                    >
-                      {!isUser ? (
-                        <p className="mb-2 text-sm font-medium text-accent">
-                          {message.role}
-                        </p>
-                      ) : null}
-                      <p
-                        className={`text-sm leading-6 ${
-                          isUser ? "text-white" : "text-text-secondary"
-                        }`}
-                      >
-                        {message.content}
-                      </p>
-                    </div>
-                  </article>
-                );
-              })}
+                    Send
+                  </button>
+                </form>
+              </div>
+            </div>
+          </>
+        ) : (
+          <div className="flex flex-1 flex-col items-center justify-center gap-4">
+            <p className="text-text-secondary">No chat rooms</p>
+            <button
+              type="button"
+              onClick={createChatRoom}
+              className="h-10 rounded-md border border-accent bg-accent px-4 text-sm font-medium text-white"
+            >
+              + New chat room
+            </button>
+          </div>
+        )}
 
-              {isThinking ? (
-                <p className="text-sm text-text-tertiary">
-                  AI instances are thinking...
+        {viewingInstance ? (
+          <div
+            className="fixed inset-0 z-50 flex items-start justify-center bg-black/20 pt-32"
+            onClick={() => setViewingInstance(null)}
+          >
+            <div
+              className="w-80 rounded-md border border-border-subtle bg-surface p-4 shadow-sm"
+              onClick={handlePickerClick}
+            >
+              <div className="mb-3 flex items-center justify-between">
+                <h3 className="text-base font-medium">{viewingInstance.name}</h3>
+                <button
+                  type="button"
+                  onClick={() => setViewingInstance(null)}
+                  className="text-sm text-text-tertiary hover:text-foreground"
+                >
+                  Close
+                </button>
+              </div>
+              {viewingInstance.description ? (
+                <p className="mb-3 text-sm text-text-secondary">
+                  {viewingInstance.description}
                 </p>
               ) : null}
+              <p className="text-sm text-text-secondary">
+                <span className="font-medium text-foreground">
+                  Instructions:
+                </span>{" "}
+                {viewingInstance.instructions}
+              </p>
             </div>
           </div>
-        </div>
+        ) : null}
 
-        <div className="shrink-0 border-t border-border-subtle bg-surface px-5 pb-5 pt-4">
-          <div className="mx-auto max-w-3xl lg:max-w-4xl">
-            {activeRoom.aiInstances.length === 0 ? (
-              <p className="mb-3 text-sm text-text-tertiary">
-                Add AI instances to start a discussion.
-              </p>
-            ) : null}
-
-            <form
-              onSubmit={handleSubmit}
-              className="flex gap-3 rounded-lg border border-border-subtle bg-surface p-3"
+        {editingInstance ? (
+          <div
+            className="fixed inset-0 z-50 flex items-start justify-center bg-black/20 pt-32"
+            onClick={() => setEditingInstance(null)}
+          >
+            <div
+              className="w-80 rounded-md border border-border-subtle bg-surface p-4 shadow-sm"
+              onClick={handlePickerClick}
             >
-              <input
-                value={draft}
-                onChange={(event) => setDraft(event.target.value)}
-                onKeyDown={handleInputKeyDown}
-                aria-label="Start a topic or reply"
-                placeholder="Start a topic or reply..."
-                className="h-11 min-w-0 flex-1 bg-transparent px-2 text-sm outline-none placeholder:text-text-tertiary"
-              />
-              <button
-                type="submit"
-                className="h-11 rounded-md border border-accent bg-accent px-4 text-sm font-medium text-white"
-              >
-                Send
-              </button>
-            </form>
+              <div className="mb-3 flex items-center justify-between">
+                <h3 className="text-base font-medium">Edit AI Instance</h3>
+                <button
+                  type="button"
+                  onClick={() => setEditingInstance(null)}
+                  className="text-sm text-text-tertiary hover:text-foreground"
+                >
+                  Cancel
+                </button>
+              </div>
+              <div className="space-y-3">
+                <div>
+                  <label
+                    htmlFor="edit-name"
+                    className="mb-1 block text-sm text-text-secondary"
+                  >
+                    Name
+                  </label>
+                  <input
+                    id="edit-name"
+                    type="text"
+                    value={editName}
+                    onChange={(event) => {
+                      setEditName(event.target.value);
+                      setEditError(null);
+                    }}
+                    className="h-9 w-full rounded-md border border-border-subtle bg-background px-3 text-sm outline-none placeholder:text-text-tertiary"
+                  />
+                </div>
+                <div>
+                  <label
+                    htmlFor="edit-instructions"
+                    className="mb-1 block text-sm text-text-secondary"
+                  >
+                    Instructions
+                  </label>
+                  <textarea
+                    id="edit-instructions"
+                    value={editInstructions}
+                    onChange={(event) => {
+                      setEditInstructions(event.target.value);
+                      setEditError(null);
+                    }}
+                    rows={3}
+                    className="w-full resize-none rounded-md border border-border-subtle bg-background px-3 py-2 text-sm outline-none placeholder:text-text-tertiary"
+                  />
+                </div>
+                <div>
+                  <label
+                    htmlFor="edit-description"
+                    className="mb-1 block text-sm text-text-secondary"
+                  >
+                    Description{" "}
+                    <span className="text-text-tertiary">(optional)</span>
+                  </label>
+                  <input
+                    id="edit-description"
+                    type="text"
+                    value={editDescription}
+                    onChange={(event) =>
+                      setEditDescription(event.target.value)
+                    }
+                    className="h-9 w-full rounded-md border border-border-subtle bg-background px-3 text-sm outline-none placeholder:text-text-tertiary"
+                  />
+                </div>
+
+                {editError ? (
+                  <p className="text-sm text-red-500">{editError}</p>
+                ) : null}
+
+                <button
+                  type="button"
+                  onClick={saveEditInstance}
+                  className="h-9 w-full rounded-md border border-accent bg-accent text-sm font-medium text-white"
+                >
+                  Save
+                </button>
+              </div>
+            </div>
           </div>
-        </div>
+        ) : null}
+
+        {isRenaming ? (
+          <div
+            className="fixed inset-0 z-50 flex items-start justify-center bg-black/20 pt-32"
+            onClick={() => setIsRenaming(false)}
+          >
+            <div
+              className="w-80 rounded-md border border-border-subtle bg-surface p-4 shadow-sm"
+              onClick={handlePickerClick}
+            >
+              <div className="mb-3 flex items-center justify-between">
+                <h3 className="text-base font-medium">Rename chat room</h3>
+                <button
+                  type="button"
+                  onClick={() => setIsRenaming(false)}
+                  className="text-sm text-text-tertiary hover:text-foreground"
+                >
+                  Cancel
+                </button>
+              </div>
+              <div className="space-y-3">
+                <input
+                  type="text"
+                  value={renameValue}
+                  onChange={(event) => {
+                    setRenameValue(event.target.value);
+                    setRenameError(null);
+                  }}
+                  className="h-9 w-full rounded-md border border-border-subtle bg-background px-3 text-sm outline-none placeholder:text-text-tertiary"
+                />
+                {renameError ? (
+                  <p className="text-sm text-red-500">{renameError}</p>
+                ) : null}
+                <button
+                  type="button"
+                  onClick={saveRename}
+                  className="h-9 w-full rounded-md border border-accent bg-accent text-sm font-medium text-white"
+                >
+                  Save
+                </button>
+              </div>
+            </div>
+          </div>
+        ) : null}
+
+        {confirmingDelete ? (
+          <div
+            className="fixed inset-0 z-50 flex items-start justify-center bg-black/20 pt-32"
+            onClick={() => setConfirmingDelete(false)}
+          >
+            <div
+              className="w-80 rounded-md border border-border-subtle bg-surface p-4 shadow-sm"
+              onClick={handlePickerClick}
+            >
+              <div className="mb-3">
+                <h3 className="text-base font-medium">Delete chat room?</h3>
+                <p className="mt-1 text-sm text-text-secondary">
+                  This will remove the chat room and all its messages.
+                </p>
+              </div>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => setConfirmingDelete(false)}
+                  className="h-9 flex-1 rounded-md border border-border-subtle bg-background text-sm font-medium text-text-secondary"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={executeDeleteRoom}
+                  className="h-9 flex-1 rounded-md border border-red-500 bg-red-500 text-sm font-medium text-white"
+                >
+                  Delete
+                </button>
+              </div>
+            </div>
+          </div>
+        ) : null}
+
+        {confirmingClear ? (
+          <div
+            className="fixed inset-0 z-50 flex items-start justify-center bg-black/20 pt-32"
+            onClick={() => setConfirmingClear(false)}
+          >
+            <div
+              className="w-80 rounded-md border border-border-subtle bg-surface p-4 shadow-sm"
+              onClick={handlePickerClick}
+            >
+              <div className="mb-3">
+                <h3 className="text-base font-medium">Clear messages?</h3>
+                <p className="mt-1 text-sm text-text-secondary">
+                  This will remove all messages. AI instances will stay.
+                </p>
+              </div>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => setConfirmingClear(false)}
+                  className="h-9 flex-1 rounded-md border border-border-subtle bg-background text-sm font-medium text-text-secondary"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={executeClearMessages}
+                  className="h-9 flex-1 rounded-md border border-accent bg-accent text-sm font-medium text-white"
+                >
+                  Clear
+                </button>
+              </div>
+            </div>
+          </div>
+        ) : null}
       </section>
     </main>
   );

@@ -1,31 +1,25 @@
-import { buildRoleInput, buildRoleInstructions, getRolePrompt } from "./role-prompts";
-import type { Message, RoleKey } from "./types";
+import { buildRoleInput, buildRoleInstructions } from "./role-prompts";
+import type { Message } from "./types";
 
-const roles: RoleKey[] = [
+const roleNames = [
   "Software Architect",
   "Business Analyst",
   "Skeptic",
   "Optimist",
   "Product Expert",
   "Critic",
+  "Custom Reviewer",
 ];
 
 describe("role prompts", () => {
-  it("provides role-specific instructions for each AI instance role", () => {
-    expect(getRolePrompt("Software Architect")).toContain(
-      "technical feasibility",
-    );
-    expect(getRolePrompt("Business Analyst")).toContain("market");
-    expect(getRolePrompt("Skeptic")).toContain("weak assumptions");
-    expect(getRolePrompt("Optimist")).toContain("upside");
-    expect(getRolePrompt("Product Expert")).toContain("MVP");
-    expect(getRolePrompt("Critic")).toContain("hard questions");
-  });
-
   it("builds concise chat instructions for every role", () => {
-    for (const role of roles) {
-      expect(buildRoleInstructions(role)).toContain(role);
-      expect(buildRoleInstructions(role)).toContain("1-2 short sentences");
+    for (const name of roleNames) {
+      const instructions = buildRoleInstructions({
+        name,
+        instructions: `Focus on ${name} things.`,
+      });
+      expect(instructions).toContain(name);
+      expect(instructions).toContain("1-2 short sentences");
     }
   });
 

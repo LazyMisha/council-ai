@@ -1,28 +1,15 @@
-import type { Message, RoleKey } from "./types";
+import type { Message } from "./types";
 
-const roleInstructions: Record<RoleKey, string> = {
-  "Software Architect":
-    "Focus on technical feasibility, implementation tradeoffs, system boundaries, and risks in execution.",
-  "Business Analyst":
-    "Focus on value, market demand, pricing, validation signals, and business tradeoffs.",
-  Skeptic:
-    "Focus on risks, weak assumptions, failure modes, and what could go wrong.",
-  Optimist:
-    "Focus on upside, opportunities, momentum, and why this might work.",
-  "Product Expert":
-    "Focus on UX, MVP scope, user value, and the smallest useful product path.",
-  Critic:
-    "Focus on flaws, contradictions, uncomfortable tradeoffs, and hard questions.",
-};
-
-export function getRolePrompt(role: RoleKey) {
-  return roleInstructions[role];
-}
-
-export function buildRoleInstructions(role: RoleKey) {
+export function buildRoleInstructions({
+  name,
+  instructions,
+}: {
+  name: string;
+  instructions: string;
+}) {
   return [
-    `You are the ${role} AI instance in a CouncilAI chat room.`,
-    getRolePrompt(role),
+    `You are the ${name} AI instance in a CouncilAI chat room.`,
+    instructions,
     "Reply in 1-2 short sentences.",
     "Stay concrete, chat-like, and specific to the user's latest message.",
     "Do not mention that you are an AI model.",

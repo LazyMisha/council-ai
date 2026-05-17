@@ -7,16 +7,16 @@ description: "Use this skill when reviewing role-based AI instances, chat orches
 
 ## Focus
 
-Review AI orchestration inside a chat.
+Review AI orchestration inside a chat room.
 
 ## Check
 
-- User message is the trigger for `Run council`.
-- Selected AI instances respond according to their roles.
-- Role prompts use chat context, not dashboard/thread terminology.
+- User messages can trigger selected AI instances to respond.
+- Selected AI instances respond according to their explicit roles.
+- Role prompts use chat room context, not dashboard/thread terminology.
 - OpenAI calls stay server-side.
 - Role responses are structured enough to persist and synthesize.
-- Moderator/final synthesis happens after role responses.
+- Final synthesis happens after role responses.
 - Partial role failures are visible and retryable.
 - Model name, prompt version, token usage, and provider metadata can be tracked.
 

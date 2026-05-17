@@ -22,7 +22,7 @@ Constraints:
 - Do not add unrelated features.
 - Do not add dependencies unless explicitly approved.
 - Keep OpenAI calls server-side.
-- Preserve Chat, AIInstance, Message, and Synthesis concepts.
+- Preserve ChatRoom, AIInstance, Message, and Synthesis concepts.
 - Avoid dashboards, long marketing pages, roadmap UI, and excessive components.
 - Update docs when behavior changes.
 

@@ -8,7 +8,7 @@ description: "Use this skill when meaningful CouncilAI logic is added and Vitest
 ## Instructions
 
 - Use Vitest and React Testing Library.
-- Focus on pure logic, validation, data transformations, role templates, AI orchestration helpers, and synthesis parsing.
+- Focus on pure logic, validation, data transformations, role templates, AI orchestration helpers, ChatRoom behavior, and synthesis parsing.
 - Avoid fragile snapshot tests.
 - Avoid testing Tailwind classes.
 - Avoid shallow tests that only check static text unless it is a useful smoke test.

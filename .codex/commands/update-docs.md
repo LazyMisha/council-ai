@@ -16,8 +16,8 @@ Docs to consider:
 
 Documentation constraints:
 - Keep docs concise and practical.
-- Keep terminology consistent: Chat, AIInstance, RoleProfile, Message, Synthesis.
-- Use "chat" for the user-created object.
+- Keep terminology consistent: ChatRoom, AIInstance, RoleProfile, Message, Synthesis.
+- Use "chat room" for the user-created object.
 - Do not document speculative features as current behavior.
 - Mark future work clearly.
 

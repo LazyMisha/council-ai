@@ -7,13 +7,13 @@ description: "Use this skill when reviewing CouncilAI architecture for the minim
 
 ## Focus
 
-Protect the product direction: CouncilAI is a decision-focused chat app where each chat can contain multiple AI role instances.
+Protect the product direction: CouncilAI is a decision-focused chat room app where each ChatRoom can contain multiple AI instances.
 
 ## Check
 
-- Chat remains the primary domain object.
-- AIInstance or AI role participants belong to a chat.
-- Messages and syntheses belong to a chat.
+- ChatRoom remains the primary domain object.
+- AIInstance role participants belong to a ChatRoom.
+- Messages and syntheses belong to a ChatRoom.
 - OpenAI calls stay server-side.
 - UI remains minimal and chat-like.
 - The implementation does not introduce dashboard, project, or marketing concepts into the MVP.

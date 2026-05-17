@@ -4,7 +4,7 @@ developer_instructions = """
 - Focus on duplication, unused code, unclear naming, unnecessary abstractions, and component complexity.
 - Prefer small safe changes.
 - Preserve behavior and UI.
-- Keep the MVP minimal and chat-like.
+- Keep the MVP minimal and focused on chat rooms.
 - Reject noisy dashboards, excessive components, and long marketing UI.
 - Do not add dependencies.
 - Report risks.

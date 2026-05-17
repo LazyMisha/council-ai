@@ -42,6 +42,30 @@ if [ ! -f package.json ]; then
   allow_stop
 fi
 
+has_app_changes() {
+  if ! git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+    return 0
+  fi
+
+  git status --porcelain -- \
+    package.json \
+    package-lock.json \
+    tsconfig.json \
+    next.config.ts \
+    eslint.config.mjs \
+    vitest.config.mts \
+    postcss.config.mjs \
+    src \
+    test \
+    | grep -q .
+}
+
+if ! has_app_changes; then
+  log "[quality-gate] SKIP: no app, test, or build config changes detected."
+  emit_log
+  allow_stop
+fi
+
 has_script() {
   node -e 'const scripts = require("./package.json").scripts || {}; process.exit(Object.prototype.hasOwnProperty.call(scripts, process.argv[1]) ? 0 : 1)' "$1"
 }

@@ -19,7 +19,7 @@ Risk areas:
 
 Testing constraints:
 - Keep tests focused on product behavior.
-- Cover Chat, AIInstance, RoleProfile, Message, Synthesis, validation, or orchestration behavior when relevant.
+- Cover ChatRoom, AIInstance, RoleProfile, Message, Synthesis, validation, or orchestration behavior when relevant.
 - Avoid brittle tests tied to exact AI prose.
 - Avoid testing Tailwind classes or static chat markup unless it is a useful smoke test.
 

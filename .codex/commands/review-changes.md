@@ -12,8 +12,8 @@ Relevant docs:
 {{RELEVANT_DOCS}}
 
 Review priorities:
-- Product fit: CouncilAI must remain a minimal decision-focused chat app with multiple AI role instances.
-- Chat, AIInstance, Message, and Synthesis boundaries.
+- Product fit: CouncilAI must remain a minimal decision-focused chat room app with multiple AI instances.
+- ChatRoom, AIInstance, Message, and Synthesis boundaries.
 - AI orchestration correctness.
 - Data integrity.
 - UI clarity, accessibility, and low visual noise.

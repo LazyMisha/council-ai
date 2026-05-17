@@ -21,8 +21,8 @@ Relevant docs:
 {{RELEVANT_DOCS}}
 
 Constraints:
-- CouncilAI is a minimal decision-focused chat app with multiple AI role instances per chat.
-- Preserve the core flow: chat, AI instances, user message, role responses, final synthesis.
+- CouncilAI is a minimal decision-focused chat room app with multiple AI instances per chat room.
+- Preserve the core flow: chat room, AI instances, user message, role responses, final synthesis.
 - Avoid dashboard-first UI, long marketing pages, and overbuilt workflows.
 - Keep the plan small enough for one developer to implement.
 

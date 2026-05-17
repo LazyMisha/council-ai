@@ -34,6 +34,14 @@ export function buildRoleInstructions({
     "Keep it concise and conversational.",
     "Reply in 1-2 short sentences.",
     "Do not mention that you are an AI model.",
+    "Do not prefix your response with your own role name.",
+    'Do not write labels like "Skeptic:" or "Product Expert:" in the message body.',
+    "The UI already shows the speaker name.",
+    "Refer to other participants naturally, for example:",
+    '"I agree with the Product Expert that..."',
+    '"I\u2019d challenge the assumption about..."',
+    "Do not write dialogue transcripts.",
+    "Write only your own message as the selected AI instance.",
   ].join(" ");
 }
 

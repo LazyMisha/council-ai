@@ -15,8 +15,23 @@ The first real implementation should be manual:
 5. Each AI instance receives the recent conversation plus any AI responses already generated in the current round.
 6. AI instances respond once each, in role, until one full fixed-order round is complete.
 7. Client appends returned role responses as messages.
-8. User can click Continue discussion to run another fixed-order round without sending a new user message.
+8. User can click Continue discussion to advance the discussion without sending a new user message. An internal smart speaker selector chooses exactly one AI instance to speak next. The selected instance receives the full chat history and responds in role.
 9. User can click Summarize to append one internal moderator summary message.
+
+## Speaker Selection
+
+When the user sends a normal message, the existing fixed-order round still runs: all AI instances respond once each in their defined order.
+
+When the user clicks Continue discussion, a smart speaker selector picks the next AI instance. The selector is invisible: it does not appear in the AI role bar and does not create a visible message. It returns structured data like `{ "aiInstanceId": "...", "reason": "..." }`.
+
+The selector considers which AI instance can add the most value now, who has not spoken recently, who can address unresolved disagreement, who can challenge weak assumptions, and who can move the discussion toward a useful conclusion. It avoids selecting an AI instance that would likely repeat previous points. It also avoids selecting the same AI instance that spoke last when another AI instance can contribute.
+
+If `OPENAI_API_KEY` is missing or the selector fails, a deterministic fallback is used:
+- Prefer the AI instance that has spoken least recently.
+- Avoid the same AI instance twice in a row when possible.
+- Fall back to the first AI instance if needed.
+
+A safety override applies when only one AI instance exists: the selector call is skipped entirely because the choice is deterministic.
 
 ## Placement
 
@@ -73,7 +88,6 @@ type Synthesis = {
 ## Future Improvements
 
 - Streaming role responses.
-- Smart speaker selection.
 - Finish detection.
 - Auto-discussion mode.
 - Model selection by role.

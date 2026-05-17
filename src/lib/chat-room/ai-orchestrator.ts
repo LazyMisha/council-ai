@@ -1,6 +1,8 @@
 import OpenAI from "openai";
 import { generateMockAIResponses } from "./mock-ai";
+import { cleanAIOutput } from "./output-cleanup";
 import { buildRoleInput, buildRoleInstructions } from "./role-prompts";
+import { selectSpeaker } from "./speaker-selector";
 import type { DiscussionMode } from "./role-prompts";
 import type { AIInstance, Message } from "./types";
 
@@ -25,7 +27,7 @@ export async function generateAIResponses({
 }: GenerateAIResponsesInput): Promise<GenerateAIResponsesResult> {
   const roundId = createRoundId(mode, latestUserMessage);
 
-  if (aiInstances.length === 0 || !process.env.OPENAI_API_KEY) {
+  if (aiInstances.length === 0) {
     return generateMockAIResponses({
       roundId,
       latestUserMessage,
@@ -33,6 +35,28 @@ export async function generateAIResponses({
       recentMessages,
       mode,
     });
+  }
+
+  let instancesToRespond = aiInstances;
+
+  if (mode === "continue" && aiInstances.length > 1) {
+    const selection = await selectSpeaker({ aiInstances, recentMessages });
+    const selected = aiInstances.find(
+      (instance) => instance.id === selection.aiInstanceId,
+    );
+    instancesToRespond = selected ? [selected] : [aiInstances[0]];
+  }
+
+  if (!process.env.OPENAI_API_KEY) {
+    return cleanMockMessages(
+      generateMockAIResponses({
+        roundId,
+        latestUserMessage,
+        aiInstances: instancesToRespond,
+        recentMessages,
+        mode,
+      }),
+    );
   }
 
   try {
@@ -43,7 +67,7 @@ export async function generateAIResponses({
     const messages: Message[] = [];
     const workingMessages = [...recentMessages];
 
-    for (const instance of aiInstances) {
+    for (const instance of instancesToRespond) {
       const response = await client.responses.create({
         model,
         instructions: buildRoleInstructions({
@@ -58,7 +82,10 @@ export async function generateAIResponses({
         }),
       });
 
-      const content = response.output_text.trim();
+      const content = cleanAIOutput(
+        instance.name,
+        response.output_text.trim(),
+      );
       const message: Message = {
         id: `${roundId}-${instance.id}-openai-response`,
         authorType: "ai",
@@ -72,14 +99,28 @@ export async function generateAIResponses({
 
     return { messages };
   } catch {
-    return generateMockAIResponses({
-      roundId,
-      latestUserMessage,
-      aiInstances,
-      recentMessages,
-      mode,
-    });
+    return cleanMockMessages(
+      generateMockAIResponses({
+        roundId,
+        latestUserMessage,
+        aiInstances: instancesToRespond,
+        recentMessages,
+        mode,
+      }),
+    );
   }
+}
+
+function cleanMockMessages(result: { messages: Message[] }): {
+  messages: Message[];
+} {
+  return {
+    messages: result.messages.map((msg) =>
+      msg.authorType === "ai" && msg.role
+        ? { ...msg, content: cleanAIOutput(msg.role, msg.content) }
+        : msg,
+    ),
+  };
 }
 
 function createRoundId(mode: DiscussionMode, latestUserMessage?: string) {

@@ -242,7 +242,7 @@ describe("generateAIResponses", () => {
       output_text: "Continue from unresolved risk.",
     });
 
-    await generateAIResponses({
+    const result = await generateAIResponses({
       mode: "continue",
       aiInstances: instances,
       recentMessages: [
@@ -256,13 +256,272 @@ describe("generateAIResponses", () => {
       ],
     });
 
-    const call = openAIResponsesCreate.mock.calls[0][0];
+    expect(result.messages).toHaveLength(1);
+    expect(result.messages[0].authorType).toBe("ai");
+    expect(result.messages[0].role).toBe("Skeptic");
+    expect(result.messages[0].content).toBe("Continue from unresolved risk.");
 
-    expect(call.instructions).toContain(
+    const responseCall = openAIResponsesCreate.mock.calls[0][0];
+    expect(responseCall.instructions).toContain(
       "Continue the existing chat-room discussion",
     );
-    expect(call.input).toContain("Software Architect: Start small.");
-    expect(call.input).toContain("Do not wait for a new user message.");
-    expect(call.input).not.toContain("Latest user message:");
+    expect(responseCall.input).toContain("Software Architect: Start small.");
+    expect(responseCall.input).toContain("Do not wait for a new user message.");
+    expect(responseCall.input).not.toContain("Latest user message:");
+  });
+
+  it("selects a single AI instance for continue mode when multiple instances exist", async () => {
+    process.env.OPENAI_API_KEY = "test-key";
+    openAIResponsesCreate
+      .mockResolvedValueOnce({
+        output_text:
+          '{"aiInstanceId": "analyst", "reason": "Business value angle is missing"}',
+      })
+      .mockResolvedValueOnce({
+        output_text: "We should validate market fit first.",
+      });
+
+    const multiInstances: AIInstance[] = [
+      {
+        id: "architect",
+        name: "Software Architect",
+        instructions: "Focus on technical feasibility.",
+      },
+      {
+        id: "analyst",
+        name: "Business Analyst",
+        instructions: "Focus on value.",
+      },
+      {
+        id: "skeptic",
+        name: "Skeptic",
+        instructions: "Focus on risks.",
+      },
+    ];
+
+    const result = await generateAIResponses({
+      mode: "continue",
+      aiInstances: multiInstances,
+      recentMessages: [
+        { id: "msg-1", authorType: "user", content: "Should we launch?" },
+        {
+          id: "msg-2",
+          authorType: "ai",
+          role: "Software Architect",
+          content: "Start small.",
+        },
+      ],
+    });
+
+    expect(result.messages).toHaveLength(1);
+    expect(result.messages[0].role).toBe("Business Analyst");
+    expect(result.messages[0].content).toBe(
+      "We should validate market fit first.",
+    );
+  });
+
+  it("falls back to mock for continue mode when OPENAI_API_KEY is missing", async () => {
+    delete process.env.OPENAI_API_KEY;
+
+    const multiInstances: AIInstance[] = [
+      {
+        id: "architect",
+        name: "Software Architect",
+        instructions: "Tech.",
+      },
+      {
+        id: "analyst",
+        name: "Business Analyst",
+        instructions: "Value.",
+      },
+    ];
+
+    const result = await generateAIResponses({
+      mode: "continue",
+      aiInstances: multiInstances,
+      recentMessages: [
+        { id: "msg-1", authorType: "user", content: "Should we launch?" },
+      ],
+    });
+
+    expect(result.messages).toHaveLength(1);
+    expect(result.messages[0].authorType).toBe("ai");
+    expect(openAIResponsesCreate).not.toHaveBeenCalled();
+  });
+
+  it("normal user message flow still uses fixed-order round", async () => {
+    process.env.OPENAI_API_KEY = "test-key";
+    openAIResponsesCreate
+      .mockResolvedValueOnce({ output_text: "Architect says start small." })
+      .mockResolvedValueOnce({ output_text: "Analyst adds success metrics." })
+      .mockResolvedValueOnce({ output_text: "Skeptic checks approval risk." });
+
+    const multiInstances: AIInstance[] = [
+      {
+        id: "architect",
+        name: "Software Architect",
+        instructions: "Focus on technical feasibility.",
+      },
+      {
+        id: "analyst",
+        name: "Business Analyst",
+        instructions: "Focus on value.",
+      },
+      {
+        id: "skeptic",
+        name: "Skeptic",
+        instructions: "Focus on risks.",
+      },
+    ];
+
+    const result = await generateAIResponses({
+      mode: "reply",
+      latestUserMessage: "Should we launch?",
+      aiInstances: multiInstances,
+      recentMessages,
+    });
+
+    expect(result.messages).toHaveLength(3);
+    expect(result.messages.map((m) => m.role)).toEqual([
+      "Software Architect",
+      "Business Analyst",
+      "Skeptic",
+    ]);
+  });
+
+  it("selected AI instance receives full chat history", async () => {
+    process.env.OPENAI_API_KEY = "test-key";
+    openAIResponsesCreate.mockResolvedValue({
+      output_text: "The risk is still unresolved.",
+    });
+
+    const fullHistory: Message[] = [
+      { id: "msg-1", authorType: "user", content: "Should we launch?" },
+      {
+        id: "msg-2",
+        authorType: "ai",
+        role: "Software Architect",
+        content: "Start small.",
+      },
+      {
+        id: "msg-3",
+        authorType: "ai",
+        role: "Business Analyst",
+        content: "Validate market first.",
+      },
+    ];
+
+    const result = await generateAIResponses({
+      mode: "continue",
+      aiInstances: [
+        {
+          id: "skeptic",
+          name: "Skeptic",
+          instructions: "Focus on risks.",
+        },
+      ],
+      recentMessages: fullHistory,
+    });
+
+    expect(result.messages).toHaveLength(1);
+
+    const responseCall = openAIResponsesCreate.mock.calls[0][0];
+    expect(responseCall.input).toContain("Software Architect: Start small.");
+    expect(responseCall.input).toContain(
+      "Business Analyst: Validate market first.",
+    );
+    expect(responseCall.input).toContain("Should we launch?");
+  });
+
+  it("skips selector call when only one AI instance exists in continue mode", async () => {
+    process.env.OPENAI_API_KEY = "test-key";
+    openAIResponsesCreate.mockResolvedValue({
+      output_text: "I see only one path forward.",
+    });
+
+    const result = await generateAIResponses({
+      mode: "continue",
+      aiInstances: [
+        { id: "ai-1", name: "Skeptic", instructions: "Focus on risks." },
+      ],
+      recentMessages: [
+        { id: "msg-1", authorType: "user", content: "Should we launch?" },
+      ],
+    });
+
+    expect(result.messages).toHaveLength(1);
+    expect(result.messages[0].role).toBe("Skeptic");
+    expect(openAIResponsesCreate).toHaveBeenCalledTimes(1);
+  });
+
+  it("calls selector when multiple AI instances exist in continue mode", async () => {
+    process.env.OPENAI_API_KEY = "test-key";
+    openAIResponsesCreate
+      .mockResolvedValueOnce({
+        output_text:
+          '{"aiInstanceId": "ai-2", "reason": "Fresh perspective needed"}',
+      })
+      .mockResolvedValueOnce({
+        output_text: "I have a different take.",
+      });
+
+    const result = await generateAIResponses({
+      mode: "continue",
+      aiInstances: [
+        { id: "ai-1", name: "Skeptic", instructions: "Risks." },
+        { id: "ai-2", name: "Optimist", instructions: "Upside." },
+      ],
+      recentMessages: [
+        { id: "msg-1", authorType: "user", content: "Should we launch?" },
+      ],
+    });
+
+    expect(result.messages).toHaveLength(1);
+    expect(result.messages[0].role).toBe("Optimist");
+    expect(openAIResponsesCreate).toHaveBeenCalledTimes(2);
+  });
+});
+
+describe("cleanAIOutput integration", () => {
+  const originalKey = process.env.OPENAI_API_KEY;
+
+  afterEach(() => {
+    process.env.OPENAI_API_KEY = originalKey;
+  });
+
+  it("strips a leading speaker label from OpenAI responses", async () => {
+    process.env.OPENAI_API_KEY = "test-key";
+    openAIResponsesCreate.mockResolvedValue({
+      output_text: "Skeptic: This is actually quite risky.",
+    });
+
+    const result = await generateAIResponses({
+      latestUserMessage: "Should we launch?",
+      aiInstances: [
+        { id: "ai-1", name: "Skeptic", instructions: "Focus on risks." },
+      ],
+      recentMessages: [],
+    });
+
+    expect(result.messages[0].content).toBe("This is actually quite risky.");
+  });
+
+  it("leaves content unchanged when no label is present", async () => {
+    process.env.OPENAI_API_KEY = "test-key";
+    openAIResponsesCreate.mockResolvedValue({
+      output_text: "This is risky without any label.",
+    });
+
+    const result = await generateAIResponses({
+      latestUserMessage: "Should we launch?",
+      aiInstances: [
+        { id: "ai-1", name: "Skeptic", instructions: "Focus on risks." },
+      ],
+      recentMessages: [],
+    });
+
+    expect(result.messages[0].content).toBe(
+      "This is risky without any label.",
+    );
   });
 });

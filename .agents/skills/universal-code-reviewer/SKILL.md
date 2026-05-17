@@ -82,20 +82,48 @@ Use this skill when reviewing code changes before commit.
 1. Inspect `git status`.
 2. Inspect `git diff`.
 3. Review changed files and related tests.
-4. Read extra docs only if relevant:
+4. Inspect diff hunks carefully and use changed-file locations from the diff when possible.
+5. When reporting an issue, include:
+   - severity: Must fix, Should fix, or Nice to have
+   - file path
+   - line number or line range when possible
+   - issue
+   - suggested fix
+6. If exact line numbers are not available, still include the file path and explain that the location is approximate.
+7. Keep review feedback concise and actionable.
+8. Read extra docs only if relevant:
    - `docs/design-system.md` for UI changes.
    - `docs/ai-orchestration.md` for AI behavior changes.
    - `docs/architecture.md` for structural changes.
-5. Group findings:
+9. Group findings:
    - Must fix
    - Should fix
    - Nice to have
-6. Apply only small safe fixes.
-7. Do not implement new product features.
-8. Run `npm run quality` if available.
-9. Report:
+10. Use this issue format:
+
+```text
+Must fix:
+- src/lib/chat-room/speaker-selector.ts:42
+  Issue: Fallback selector can choose the same AI instance twice in a row.
+  Suggested fix: Exclude the latest AI speaker when other AI instances are available.
+
+Should fix:
+- src/components/chat/message-list.tsx:88-96
+  Issue: Message rendering duplicates role-label logic.
+  Suggested fix: Extract a small helper or reuse the existing role label component.
+
+Nice to have:
+- src/lib/chat-room/types.ts:14
+  Issue: Type name is a little too generic.
+  Suggested fix: Consider renaming it to ChatRoomMessage later.
+```
+
+11. Apply only small safe fixes.
+12. Do not implement new product features.
+13. Run `npm run quality` if available after safe fixes.
+14. Report:
    - files reviewed
-   - files changed
-   - issues fixed
+   - issues found with file:line references
+   - fixes applied
    - remaining suggestions
    - quality result

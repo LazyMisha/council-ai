@@ -90,6 +90,7 @@ export function isValidChatRoom(item: unknown): item is ChatRoom {
 
   if (!room.aiInstances.every(isValidAIInstance)) return false;
   if (!room.messages.every(isValidMessage)) return false;
+  if (typeof room.canSummarize !== "boolean") return false;
 
   return true;
 }
@@ -130,6 +131,10 @@ function migrateStorageState(item: Record<string, unknown>): StorageState {
       ? roomRecord.messages
       : [];
 
+    const hasSummary = rawMessages.some(
+      (msg) => isValidMessage(msg) && (msg as Message).authorType === "summary",
+    );
+
     return {
       id: isNonEmptyString(roomRecord.id) ? roomRecord.id : `room-${Date.now()}`,
       title: isNonEmptyString(roomRecord.title)
@@ -139,6 +144,10 @@ function migrateStorageState(item: Record<string, unknown>): StorageState {
         migrateAIInstance(instance as Record<string, unknown>),
       ),
       messages: rawMessages.filter(isValidMessage),
+      canSummarize:
+        typeof roomRecord.canSummarize === "boolean"
+          ? roomRecord.canSummarize
+          : hasSummary,
     };
   });
 

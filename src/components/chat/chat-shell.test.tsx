@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { ChatShell } from "./chat-shell";
 
 describe("ChatShell", () => {
@@ -59,5 +59,79 @@ describe("ChatShell", () => {
     expect(screen.getByText("Software Architect")).toBeInTheDocument();
     expect(screen.getByText("Business Analyst")).toBeInTheDocument();
     expect(screen.getByText("Skeptic")).toBeInTheDocument();
+  });
+
+  it("does not show Summarize when no AI discussion exists", () => {
+    render(<ChatShell />);
+
+    createRoomFromEmptyState();
+
+    expect(screen.queryByText("Summarize")).not.toBeInTheDocument();
+  });
+
+  it("shows Summarize when the room has canSummarize and AI messages", async () => {
+    const roomWithDiscussion = {
+      id: "room-1",
+      title: "Test Room",
+      aiInstances: [
+        { id: "ai-1", name: "Skeptic", instructions: "Focus on risks." },
+      ],
+      messages: [
+        { id: "msg-1", authorType: "user", content: "Hello" },
+        { id: "msg-2", authorType: "ai", role: "Skeptic", content: "Risky." },
+      ],
+      canSummarize: true,
+    };
+
+    window.localStorage.setItem(
+      "council-ai-chat-rooms",
+      JSON.stringify({
+        chatRooms: [roomWithDiscussion],
+        activeRoomId: "room-1",
+      }),
+    );
+
+    render(<ChatShell />);
+
+    await waitFor(() => {
+      expect(screen.getByText("Summarize")).toBeInTheDocument();
+    });
+  });
+
+  it("hides Summarize after messages are cleared", async () => {
+    const roomWithDiscussion = {
+      id: "room-1",
+      title: "Test Room",
+      aiInstances: [
+        { id: "ai-1", name: "Skeptic", instructions: "Focus on risks." },
+      ],
+      messages: [
+        { id: "msg-1", authorType: "user", content: "Hello" },
+        { id: "msg-2", authorType: "ai", role: "Skeptic", content: "Risky." },
+      ],
+      canSummarize: true,
+    };
+
+    window.localStorage.setItem(
+      "council-ai-chat-rooms",
+      JSON.stringify({
+        chatRooms: [roomWithDiscussion],
+        activeRoomId: "room-1",
+      }),
+    );
+
+    render(<ChatShell />);
+
+    await waitFor(() => {
+      expect(screen.getByText("Summarize")).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByLabelText("Chat room options"));
+    fireEvent.click(screen.getByText("Clear messages"));
+    fireEvent.click(screen.getByRole("button", { name: "Clear" }));
+
+    await waitFor(() => {
+      expect(screen.queryByText("Summarize")).not.toBeInTheDocument();
+    });
   });
 });

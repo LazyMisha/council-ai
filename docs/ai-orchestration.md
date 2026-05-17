@@ -85,10 +85,31 @@ type Synthesis = {
 - Allow retry.
 - Store model name, prompt version, token usage, and provider metadata.
 
+## Finish Detection
+
+An internal finish detector evaluates whether the discussion has enough useful information after each AI discussion round completes.
+
+The finish detector is invisible: it does not appear in the AI role bar and does not create a visible chat message. It returns structured data like `{ "status": "ready_to_summarize", "reason": "..." }`.
+
+Possible statuses:
+- `ready_to_summarize`: enough key arguments exist, a tradeoff or disagreement was explored, and there are practical next steps.
+- `continue_discussion`: the discussion is still shallow or important roles have not contributed enough.
+
+If `OPENAI_API_KEY` is missing or the detector fails, a deterministic fallback is used:
+- Prefer `continue_discussion` when fewer than 3 AI messages exist.
+- Prefer `ready_to_summarize` when 3 or more AI messages exist.
+
+The finish detector runs after each AI discussion round. When it decides the discussion is ready to summarize, it sets the room's `canSummarize` flag to `true`. Once this flag is set, it stays `true` for that room's lifetime — it is not reset by new user messages or additional Continue discussion rounds. The Summarize button is shown whenever `canSummarize` is `true` and AI messages exist in the room.
+
+The `canSummarize` flag is persisted in `localStorage` as part of the chat room state. It is reset only when:
+- the room's messages are cleared
+- the room is deleted
+
+When the finish detector returns anything other than `ready_to_summarize`, no status text is shown. Continue discussion remains available at all times after an AI discussion round exists.
+
 ## Future Improvements
 
 - Streaming role responses.
-- Finish detection.
 - Auto-discussion mode.
 - Model selection by role.
 - Uploaded context.

@@ -99,6 +99,7 @@ export function ChatShell() {
       title: "Untitled chat room",
       aiInstances: [],
       messages: [],
+      canSummarize: false,
     };
 
     setChatRooms((rooms) => [room, ...rooms]);
@@ -311,7 +312,7 @@ export function ChatShell() {
 
     setChatRooms((rooms) =>
       rooms.map((room) =>
-        room.id === activeRoom.id ? { ...room, messages: [] } : room,
+        room.id === activeRoom.id ? { ...room, messages: [], canSummarize: false } : room,
       ),
     );
     setConfirmingClear(false);
@@ -355,9 +356,11 @@ export function ChatShell() {
     );
     setDraft("");
 
-    if (aiInstances.length > 0) {
-      setThinkingRoomIds((roomIds) => [...roomIds, roomId]);
+    if (aiInstances.length === 0) {
+      return;
     }
+
+    setThinkingRoomIds((roomIds) => [...roomIds, roomId]);
 
     try {
       const [response] = await Promise.all([
@@ -373,7 +376,7 @@ export function ChatShell() {
             recentMessages,
           }),
         }),
-        aiInstances.length > 0 ? wait(700) : Promise.resolve(),
+        wait(700),
       ]);
 
       if (!response.ok) {
@@ -394,6 +397,9 @@ export function ChatShell() {
             : room,
         ),
       );
+
+      const updatedMessages = [...recentMessages, ...responseMessages];
+      void fetchFinishDecision(roomId, aiInstances, updatedMessages);
     } finally {
       setThinkingRoomIds((roomIds) => {
         const roomIndex = roomIds.indexOf(roomId);
@@ -447,11 +453,59 @@ export function ChatShell() {
             : room,
         ),
       );
+
+      const updatedMessages = [...recentMessages, ...responseMessages];
+      void fetchFinishDecision(roomId, aiInstances, updatedMessages);
     } finally {
       setThinkingRoomIds((roomIds) => {
         const roomIndex = roomIds.indexOf(roomId);
         return roomIds.filter((_, index) => index !== roomIndex);
       });
+    }
+  };
+
+  const fetchFinishDecision = async (
+    roomId: string,
+    aiInstances: AIInstance[],
+    recentMessages: Message[],
+  ) => {
+    try {
+      const response = await fetch("/api/chat-room/finish", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          aiInstances,
+          recentMessages,
+        }),
+      });
+
+      if (!response.ok) {
+        return;
+      }
+
+      const data = (await response.json()) as { status: string };
+
+      if (data.status === "ready_to_summarize") {
+        setChatRooms((rooms) =>
+          rooms.map((room) => {
+            if (room.id !== roomId) return room;
+
+            const lastCurrent = room.messages[room.messages.length - 1];
+            const lastSent = recentMessages[recentMessages.length - 1];
+            const messagesUnchanged =
+              room.messages.length === recentMessages.length &&
+              lastCurrent?.id === lastSent?.id;
+
+            if (!messagesUnchanged) return room;
+
+            return { ...room, canSummarize: true };
+          }),
+        );
+      }
+    } catch {
+      // Silently ignore finish detection failures.
     }
   };
 
@@ -493,7 +547,11 @@ export function ChatShell() {
       setChatRooms((rooms) =>
         rooms.map((room) =>
           room.id === roomId
-            ? { ...room, messages: [...room.messages, summaryMessage] }
+            ? {
+                ...room,
+                messages: [...room.messages, summaryMessage],
+                canSummarize: true,
+              }
             : room,
         ),
       );
@@ -916,14 +974,16 @@ export function ChatShell() {
                     >
                       Continue discussion
                     </button>
-                    <button
-                      type="button"
-                      onClick={summarizeDiscussion}
-                      disabled={isThinking}
-                      className="h-8 rounded-md border border-border-subtle bg-surface px-3 text-sm text-text-secondary hover:bg-background disabled:cursor-not-allowed disabled:opacity-50 cursor-pointer"
-                    >
-                      Summarize
-                    </button>
+                    {activeRoom?.canSummarize ? (
+                      <button
+                        type="button"
+                        onClick={summarizeDiscussion}
+                        disabled={isThinking}
+                        className="h-8 rounded-md border border-border-subtle bg-surface px-3 text-sm font-medium text-accent hover:bg-accent-muted disabled:cursor-not-allowed disabled:opacity-50 cursor-pointer"
+                      >
+                        Summarize
+                      </button>
+                    ) : null}
                   </div>
                 ) : null}
 

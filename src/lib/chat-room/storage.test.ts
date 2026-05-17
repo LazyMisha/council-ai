@@ -145,6 +145,7 @@ describe("isValidChatRoom", () => {
         { id: "ai-1", name: "Skeptic", instructions: "Focus on risks." },
       ],
       messages: [{ id: "msg-1", authorType: "user", content: "Hello" }],
+      canSummarize: false,
     };
 
     expect(isValidChatRoom(room)).toBe(true);
@@ -156,6 +157,7 @@ describe("isValidChatRoom", () => {
       title: "Test Room",
       aiInstances: [],
       messages: [],
+      canSummarize: false,
     };
 
     expect(isValidChatRoom(room)).toBe(true);
@@ -264,6 +266,7 @@ describe("loadStorageState", () => {
             { id: "ai-1", role: "Skeptic", instructions: "Focus on risks." },
           ],
           messages: [{ id: "msg-1", authorType: "user", content: "Hello" }],
+          canSummarize: false,
         },
       ],
       activeRoomId: "room-1",
@@ -286,6 +289,7 @@ describe("loadStorageState", () => {
           title: "Room One",
           aiInstances: [],
           messages: [],
+          canSummarize: false,
         },
       ],
       activeRoomId: "missing-room",
@@ -308,6 +312,7 @@ describe("saveStorageState", () => {
           title: "Test",
           aiInstances: [],
           messages: [],
+          canSummarize: false,
         },
       ],
       activeRoomId: "room-1",
@@ -333,6 +338,7 @@ describe("loadStorageState migration edge cases", () => {
             { id: "ai-1", role: "Unknown Role", instructions: "Do stuff." },
           ],
           messages: [],
+          canSummarize: false,
         },
       ],
       activeRoomId: "room-1",
@@ -360,6 +366,7 @@ describe("loadStorageState migration edge cases", () => {
             },
           ],
           messages: [],
+          canSummarize: false,
         },
       ],
       activeRoomId: "room-1",
@@ -371,5 +378,77 @@ describe("loadStorageState migration edge cases", () => {
     expect(loaded.chatRooms[0].aiInstances[0]).toEqual(
       state.chatRooms[0].aiInstances[0],
     );
+  });
+});
+
+describe("canSummarize persistence", () => {
+  const storageKey = "council-ai-chat-rooms";
+
+  it("preserves canSummarize through save and load", () => {
+    const state = {
+      chatRooms: [
+        {
+          id: "room-1",
+          title: "Test Room",
+          aiInstances: [],
+          messages: [],
+          canSummarize: true,
+        },
+      ],
+      activeRoomId: "room-1",
+    };
+
+    saveStorageState(state);
+    const loaded = loadStorageState();
+
+    expect(loaded.chatRooms[0].canSummarize).toBe(true);
+  });
+
+  it("migrates old rooms without canSummarize to false when no summary exists", () => {
+    const oldState = {
+      chatRooms: [
+        {
+          id: "room-1",
+          title: "Old Room",
+          aiInstances: [],
+          messages: [
+            { id: "msg-1", authorType: "user", content: "Hello" },
+          ],
+        },
+      ],
+      activeRoomId: "room-1",
+    };
+
+    window.localStorage.setItem(storageKey, JSON.stringify(oldState));
+    const loaded = loadStorageState();
+
+    expect(loaded.chatRooms[0].canSummarize).toBe(false);
+  });
+
+  it("migrates old rooms with summary messages to canSummarize true", () => {
+    const oldState = {
+      chatRooms: [
+        {
+          id: "room-1",
+          title: "Old Room",
+          aiInstances: [],
+          messages: [
+            { id: "msg-1", authorType: "user", content: "Hello" },
+            {
+              id: "msg-2",
+              authorType: "summary",
+              role: "Moderator Summary",
+              content: "Key points.",
+            },
+          ],
+        },
+      ],
+      activeRoomId: "room-1",
+    };
+
+    window.localStorage.setItem(storageKey, JSON.stringify(oldState));
+    const loaded = loadStorageState();
+
+    expect(loaded.chatRooms[0].canSummarize).toBe(true);
   });
 });

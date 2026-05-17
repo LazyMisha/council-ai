@@ -25,6 +25,7 @@ export type ChatRoom = {
   title: string;
   aiInstances: AIInstance[];
   messages: Message[];
+  canSummarize: boolean;
 };
 
 export type RoleProfile = {

@@ -27,6 +27,47 @@ describe("POST /api/chat-room/respond", () => {
     expect(response.status).toBe(400);
   });
 
+  it("allows continue mode without latestUserMessage", async () => {
+    const { generateAIResponses } = await import(
+      "@/lib/chat-room/ai-orchestrator"
+    );
+    vi.mocked(generateAIResponses).mockResolvedValue({
+      messages: [
+        {
+          id: "msg-continue",
+          authorType: "ai",
+          role: "Skeptic",
+          content: "Continue from the unresolved risk.",
+        },
+      ],
+    });
+
+    const request = new Request("http://localhost", {
+      method: "POST",
+      body: JSON.stringify({
+        mode: "continue",
+        aiInstances: [
+          { id: "ai-1", name: "Skeptic", instructions: "Focus on risks." },
+        ],
+        recentMessages: [
+          { id: "msg-0", authorType: "user", content: "Should we launch?" },
+        ],
+      }),
+    });
+
+    const response = await POST(request);
+    expect(response.status).toBe(200);
+    expect(vi.mocked(generateAIResponses)).toHaveBeenLastCalledWith({
+      mode: "continue",
+      aiInstances: [
+        { id: "ai-1", name: "Skeptic", instructions: "Focus on risks." },
+      ],
+      recentMessages: [
+        { id: "msg-0", authorType: "user", content: "Should we launch?" },
+      ],
+    });
+  });
+
   it("returns 400 when aiInstances is not an array", async () => {
     const request = new Request("http://localhost", {
       method: "POST",

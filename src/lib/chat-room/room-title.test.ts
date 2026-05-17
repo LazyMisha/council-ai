@@ -10,8 +10,8 @@ describe("deriveChatRoomTitle", () => {
   it("truncates a long first user message", () => {
     expect(
       deriveChatRoomTitle(
-        "Should we launch the partner pilot this quarter with only one integration?",
+        "Should we expand the beta group this quarter with only one integration?",
       ),
-    ).toBe("Should we launch the partner pi...");
+    ).toBe("Should we expand the beta group...");
   });
 });

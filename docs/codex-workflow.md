@@ -4,7 +4,7 @@ CouncilAI should be built as a minimal multi-AI-instance chat room app. Protect 
 
 ## Current Repository State
 
-The app is a Next.js App Router project with a local-state chat room UI and a minimal API route for AI instance responses, with mock fallback when `OPENAI_API_KEY` is missing. It has TypeScript, Tailwind CSS, ESLint, Vitest, and React Testing Library.
+The app is a Next.js App Router project with a local-state chat room UI, fixed-order AI instance response rounds, manual continue discussion, and an internal moderator summary route, with mock fallback when `OPENAI_API_KEY` is missing. It has TypeScript, Tailwind CSS, ESLint, Vitest, and React Testing Library.
 
 Do not assume Prisma, Supabase, or OpenAI integration exists until those files and dependencies are added in a scoped task.
 
@@ -23,9 +23,8 @@ Use Context7 MCP for fresh library documentation when implementing Next.js App R
 ## Build Order
 
 1. Persist chat rooms, AI instances, messages, and syntheses.
-2. Add final synthesis orchestration.
-3. Add auth.
-4. Add uploaded context.
+2. Add auth.
+3. Add uploaded context.
 
 ## Coding Guidelines
 

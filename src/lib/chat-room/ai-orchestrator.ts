@@ -1,12 +1,14 @@
 import OpenAI from "openai";
 import { generateMockAIResponses } from "./mock-ai";
 import { buildRoleInput, buildRoleInstructions } from "./role-prompts";
+import type { DiscussionMode } from "./role-prompts";
 import type { AIInstance, Message } from "./types";
 
 type GenerateAIResponsesInput = {
-  latestUserMessage: string;
+  latestUserMessage?: string;
   aiInstances: AIInstance[];
   recentMessages: Message[];
+  mode?: DiscussionMode;
 };
 
 type GenerateAIResponsesResult = {
@@ -19,14 +21,17 @@ export async function generateAIResponses({
   latestUserMessage,
   aiInstances,
   recentMessages,
+  mode = "reply",
 }: GenerateAIResponsesInput): Promise<GenerateAIResponsesResult> {
-  const userMessage = createUserMessage(latestUserMessage);
+  const roundId = createRoundId(mode, latestUserMessage);
 
   if (aiInstances.length === 0 || !process.env.OPENAI_API_KEY) {
     return generateMockAIResponses({
-      latestUserMessage: userMessage,
+      roundId,
+      latestUserMessage,
       aiInstances,
       recentMessages,
+      mode,
     });
   }
 
@@ -35,47 +40,53 @@ export async function generateAIResponses({
       apiKey: process.env.OPENAI_API_KEY,
     });
 
-    const messages = await Promise.all(
-      aiInstances.map(async (instance) => {
-        const response = await client.responses.create({
-          model,
-          instructions: buildRoleInstructions({
-            name: instance.name,
-            instructions: instance.instructions,
-          }),
-          input: buildRoleInput({
-            latestUserMessage,
-            recentMessages,
-          }),
-        });
+    const messages: Message[] = [];
+    const workingMessages = [...recentMessages];
 
-        const content = response.output_text.trim();
+    for (const instance of aiInstances) {
+      const response = await client.responses.create({
+        model,
+        instructions: buildRoleInstructions({
+          name: instance.name,
+          instructions: instance.instructions,
+          mode,
+        }),
+        input: buildRoleInput({
+          latestUserMessage,
+          recentMessages: workingMessages,
+          mode,
+        }),
+      });
 
-        return {
-          id: `${userMessage.id}-${instance.id}-openai-response`,
-          authorType: "ai" as const,
-          role: instance.name,
-          content: content || fallbackEmptyResponse(instance.name),
-        };
-      }),
-    );
+      const content = response.output_text.trim();
+      const message: Message = {
+        id: `${roundId}-${instance.id}-openai-response`,
+        authorType: "ai",
+        role: instance.name,
+        content: content || fallbackEmptyResponse(instance.name),
+      };
+
+      messages.push(message);
+      workingMessages.push(message);
+    }
 
     return { messages };
   } catch {
     return generateMockAIResponses({
-      latestUserMessage: userMessage,
+      roundId,
+      latestUserMessage,
       aiInstances,
       recentMessages,
+      mode,
     });
   }
 }
 
-function createUserMessage(content: string): Message {
-  return {
-    id: `latest-user-message-${Date.now()}`,
-    authorType: "user",
-    content,
-  };
+function createRoundId(mode: DiscussionMode, latestUserMessage?: string) {
+  const prefix = mode === "continue" ? "continue-discussion" : "user-message";
+  const contentHint = latestUserMessage ? "latest" : "existing-context";
+
+  return `${prefix}-${contentHint}-${Date.now()}`;
 }
 
 function fallbackEmptyResponse(roleName: string) {

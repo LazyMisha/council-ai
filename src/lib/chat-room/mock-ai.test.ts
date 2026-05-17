@@ -44,7 +44,8 @@ describe("generateMockAIResponses", () => {
   it("returns a hint and no messages when no AI instances exist", () => {
     expect(
       generateMockAIResponses({
-        latestUserMessage,
+        roundId: latestUserMessage.id,
+        latestUserMessage: latestUserMessage.content,
         aiInstances: [],
       }),
     ).toEqual({
@@ -61,7 +62,8 @@ describe("generateMockAIResponses", () => {
 
   it("creates one AI message for each AI instance", () => {
     const { messages, hint } = generateMockAIResponses({
-      latestUserMessage,
+      roundId: latestUserMessage.id,
+      latestUserMessage: latestUserMessage.content,
       aiInstances: predefinedInstances,
       recentMessages: [],
     });
@@ -74,9 +76,34 @@ describe("generateMockAIResponses", () => {
     expect(messages.every((message) => message.authorType === "ai")).toBe(true);
   });
 
+  it("creates mock responses in order with earlier round responses visible", () => {
+    const { messages } = generateMockAIResponses({
+      roundId: latestUserMessage.id,
+      latestUserMessage: latestUserMessage.content,
+      aiInstances: [
+        predefinedInstances[0],
+        predefinedInstances[5],
+        predefinedInstances[2],
+      ],
+      recentMessages: [latestUserMessage],
+    });
+
+    expect(messages.map((message) => message.role)).toEqual([
+      "Software Architect",
+      "Critic",
+      "Skeptic",
+    ]);
+    expect(messages[0].content).not.toContain("Building on");
+    expect(messages[1].content).toContain(
+      "Building on Software Architect's point",
+    );
+    expect(messages[2].content).toContain("Building on Critic's point");
+  });
+
   it("keeps mock responses role-specific for predefined roles", () => {
     const { messages } = generateMockAIResponses({
-      latestUserMessage,
+      roundId: latestUserMessage.id,
+      latestUserMessage: latestUserMessage.content,
       aiInstances: predefinedInstances,
     });
 
@@ -96,12 +123,39 @@ describe("generateMockAIResponses", () => {
     };
 
     const { messages } = generateMockAIResponses({
-      latestUserMessage,
+      roundId: latestUserMessage.id,
+      latestUserMessage: latestUserMessage.content,
       aiInstances: [customInstance],
     });
 
     expect(messages).toHaveLength(1);
     expect(messages[0].role).toBe("Legal Reviewer");
     expect(messages[0].content).toContain("Legal Reviewer");
+  });
+
+  it("continues from existing context without a new user message", () => {
+    const { messages } = generateMockAIResponses({
+      roundId: "continue-round",
+      mode: "continue",
+      aiInstances: [predefinedInstances[0], predefinedInstances[2]],
+      recentMessages: [
+        latestUserMessage,
+        {
+          id: "ai-existing",
+          authorType: "ai",
+          role: "Business Analyst",
+          content: "We still need success metrics.",
+        },
+      ],
+    });
+
+    expect(messages).toHaveLength(2);
+    expect(messages[0].content).toContain(
+      "Building on Business Analyst's point",
+    );
+    expect(messages[0].content).toContain("still unresolved");
+    expect(messages[1].content).toContain(
+      "Building on Software Architect's point",
+    );
   });
 });

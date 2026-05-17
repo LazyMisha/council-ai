@@ -43,58 +43,7 @@ export function isPredefinedName(name: string): boolean {
   return predefinedRoles.some((role) => role.name === name);
 }
 
-export const initialChatRooms: ChatRoom[] = [
-  {
-    id: "partner-pilot-launch",
-    title: "Partner pilot launch",
-    aiInstances: [
-      {
-        id: "architect-initial",
-        name: "Software Architect",
-        instructions: predefinedRoles[0].instructions,
-        description: predefinedRoles[0].description,
-      },
-      {
-        id: "analyst-initial",
-        name: "Business Analyst",
-        instructions: predefinedRoles[1].instructions,
-        description: predefinedRoles[1].description,
-      },
-      {
-        id: "skeptic-initial",
-        name: "Skeptic",
-        instructions: predefinedRoles[2].instructions,
-        description: predefinedRoles[2].description,
-      },
-    ],
-    messages: [
-      {
-        id: "user-question",
-        authorType: "user",
-        content: "Should we launch the partner pilot this quarter?",
-      },
-      {
-        id: "architect",
-        authorType: "ai",
-        role: "Software Architect",
-        content: "Keep the first version limited to existing integrations.",
-      },
-      {
-        id: "analyst",
-        authorType: "ai",
-        role: "Business Analyst",
-        content:
-          "The pilot is useful if success criteria are defined before launch.",
-      },
-      {
-        id: "skeptic",
-        authorType: "ai",
-        role: "Skeptic",
-        content: "The approval path is still the biggest risk.",
-      },
-    ],
-  },
-];
+export const initialChatRooms: ChatRoom[] = [];
 
 export const summaryPlaceholder =
   "The final summary will appear here after the AI instances respond.";

@@ -89,6 +89,9 @@ export function ChatShell() {
   const isThinking = activeRoom
     ? thinkingRoomIds.includes(activeRoom.id)
     : false;
+  const hasAIDiscussionRound = activeRoom
+    ? activeRoom.messages.some((message) => message.authorType === "ai")
+    : false;
 
   const createChatRoom = () => {
     const room: ChatRoom = {
@@ -364,6 +367,7 @@ export function ChatShell() {
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
+            mode: "reply",
             latestUserMessage: content,
             aiInstances,
             recentMessages,
@@ -387,6 +391,109 @@ export function ChatShell() {
         rooms.map((room) =>
           room.id === roomId
             ? { ...room, messages: [...room.messages, ...responseMessages] }
+            : room,
+        ),
+      );
+    } finally {
+      setThinkingRoomIds((roomIds) => {
+        const roomIndex = roomIds.indexOf(roomId);
+        return roomIds.filter((_, index) => index !== roomIndex);
+      });
+    }
+  };
+
+  const continueDiscussion = async () => {
+    if (!activeRoom || activeRoom.aiInstances.length === 0 || isThinking) {
+      return;
+    }
+
+    const roomId = activeRoom.id;
+    const aiInstances = activeRoom.aiInstances;
+    const recentMessages = activeRoom.messages;
+
+    setThinkingRoomIds((roomIds) => [...roomIds, roomId]);
+
+    try {
+      const [response] = await Promise.all([
+        fetch("/api/chat-room/respond", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            mode: "continue",
+            aiInstances,
+            recentMessages,
+          }),
+        }),
+        wait(700),
+      ]);
+
+      if (!response.ok) {
+        return;
+      }
+
+      const data = (await response.json()) as { messages?: Message[] };
+      const responseMessages = data.messages ?? [];
+
+      if (responseMessages.length === 0) {
+        return;
+      }
+
+      setChatRooms((rooms) =>
+        rooms.map((room) =>
+          room.id === roomId
+            ? { ...room, messages: [...room.messages, ...responseMessages] }
+            : room,
+        ),
+      );
+    } finally {
+      setThinkingRoomIds((roomIds) => {
+        const roomIndex = roomIds.indexOf(roomId);
+        return roomIds.filter((_, index) => index !== roomIndex);
+      });
+    }
+  };
+
+  const summarizeDiscussion = async () => {
+    if (!activeRoom || !hasAIDiscussionRound || isThinking) {
+      return;
+    }
+
+    const roomId = activeRoom.id;
+    const recentMessages = activeRoom.messages;
+
+    setThinkingRoomIds((roomIds) => [...roomIds, roomId]);
+
+    try {
+      const [response] = await Promise.all([
+        fetch("/api/chat-room/summarize", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            recentMessages,
+          }),
+        }),
+        wait(700),
+      ]);
+
+      if (!response.ok) {
+        return;
+      }
+
+      const data = (await response.json()) as { message?: Message };
+      const summaryMessage = data.message;
+
+      if (!summaryMessage) {
+        return;
+      }
+
+      setChatRooms((rooms) =>
+        rooms.map((room) =>
+          room.id === roomId
+            ? { ...room, messages: [...room.messages, summaryMessage] }
             : room,
         ),
       );
@@ -797,6 +904,27 @@ export function ChatShell() {
                   <p className="mb-3 text-sm text-text-tertiary">
                     Add AI instances to start a discussion.
                   </p>
+                ) : null}
+
+                {hasAIDiscussionRound ? (
+                  <div className="mb-3 flex flex-wrap gap-2">
+                    <button
+                      type="button"
+                      onClick={continueDiscussion}
+                      disabled={isThinking || activeRoom.aiInstances.length === 0}
+                      className="h-8 rounded-md border border-border-subtle bg-surface px-3 text-sm text-text-secondary hover:bg-background disabled:cursor-not-allowed disabled:opacity-50 cursor-pointer"
+                    >
+                      Continue discussion
+                    </button>
+                    <button
+                      type="button"
+                      onClick={summarizeDiscussion}
+                      disabled={isThinking}
+                      className="h-8 rounded-md border border-border-subtle bg-surface px-3 text-sm text-text-secondary hover:bg-background disabled:cursor-not-allowed disabled:opacity-50 cursor-pointer"
+                    >
+                      Summarize
+                    </button>
+                  </div>
                 ) : null}
 
                 <form

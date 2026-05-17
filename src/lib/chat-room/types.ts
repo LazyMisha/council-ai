@@ -15,7 +15,7 @@ export type AIInstance = {
 
 export type Message = {
   id: string;
-  authorType: "user" | "ai" | "system";
+  authorType: "user" | "ai" | "system" | "summary";
   content: string;
   role?: string;
 };

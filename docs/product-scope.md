@@ -6,7 +6,7 @@ Each chat room can include AI instances with roles. The user starts a topic, AI 
 
 ## Current Product State
 
-The app is a local-state Next.js chat room shell. It has interactive chat room creation, AI instance selection, local message sending, and a minimal API route for AI instance responses. It uses OpenAI when `OPENAI_API_KEY` is configured and falls back to mock responses otherwise. It has no auth, database, uploads, realtime, or collaboration.
+The app is a local-state Next.js chat room shell. It has interactive chat room creation, AI instance selection, local message sending, fixed-order AI instance response rounds, manual continue discussion, and internal moderator summaries. It uses OpenAI when `OPENAI_API_KEY` is configured and falls back to mock responses otherwise. It has no auth, database, uploads, realtime, or collaboration.
 
 ## Core User Problem
 
@@ -20,7 +20,7 @@ Users often need more than a single generic answer. They need a few useful persp
 4. User starts a topic or replies.
 5. User sends the message.
 6. AI instances respond in the chat room.
-7. A moderator/synthesis step creates the final summary.
+7. User can continue the discussion or ask for a moderator summary.
 
 ## MVP Features
 
@@ -30,7 +30,8 @@ Users often need more than a single generic answer. They need a few useful persp
 - Message input fixed near the bottom.
 - Send action.
 - API-generated AI instance responses with mock fallback.
-- Final synthesis placeholder.
+- Continue discussion action.
+- Internal moderator summary message with mock fallback.
 
 ## Not In MVP
 

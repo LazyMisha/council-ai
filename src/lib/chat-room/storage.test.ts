@@ -41,6 +41,17 @@ describe("isValidMessage", () => {
     expect(isValidMessage(message)).toBe(true);
   });
 
+  it("returns true for a valid summary message", () => {
+    const message: Message = {
+      id: "msg-summary",
+      authorType: "summary",
+      role: "Moderator Summary",
+      content: "Key points and next steps.",
+    };
+
+    expect(isValidMessage(message)).toBe(true);
+  });
+
   it("returns false when id is missing", () => {
     expect(isValidMessage({ authorType: "user", content: "Hello" })).toBe(false);
   });

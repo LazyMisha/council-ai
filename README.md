@@ -6,7 +6,7 @@ The user creates a chat room, adds AI instances, starts a topic, and can join th
 
 ## Current Status
 
-The project is a Next.js App Router app with a minimal local-state chat room UI and a small API route for AI instance responses. Auth, persistence, file upload, and realtime collaboration are not implemented yet.
+The project is a Next.js App Router app with a minimal local-state chat room UI, fixed-order AI instance discussion rounds, and an internal moderator summary action. Auth, persistence, file upload, and realtime collaboration are not implemented yet.
 
 ## MVP Scope
 
@@ -15,8 +15,9 @@ The project is a Next.js App Router app with a minimal local-state chat room UI 
 - AI instances area showing roles in the current chat room.
 - Message input with `Start a topic or reply...`.
 - Local message sending and API-generated AI instance responses.
+- Continue discussion action for another fixed-order AI round.
+- Internal moderator summary message.
 - Mock AI instance fallback when `OPENAI_API_KEY` is missing.
-- Final synthesis placeholder.
 
 Out of scope for the first MVP: dashboards, long marketing pages, file upload, collaboration, billing, background jobs, and complex routing.
 
@@ -44,5 +45,5 @@ Copy `.env.example` to `.env.local` and set `OPENAI_API_KEY` to enable real AI i
 ## Next Planned Steps
 
 1. Persist chat rooms, messages, roles, and syntheses.
-2. Replace mock responses with server-side OpenAI orchestration.
-3. Add auth after the core chat room loop is clear.
+2. Add auth after the core chat room loop is clear.
+3. Replace localStorage with database-backed chat rooms.

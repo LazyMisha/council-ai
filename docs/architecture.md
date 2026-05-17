@@ -9,7 +9,8 @@ The core domain object is `ChatRoom`. A chat room contains messages, AI instance
 - `src/app/page.tsx`: renders the main chat room UI directly.
 - `src/app/chat/page.tsx`: alternate route for the same chat room UI.
 - `src/components/chat/`: minimal chat shell components.
-- `src/app/api/chat-room/respond/route.ts`: minimal API route for AI instance responses.
+- `src/app/api/chat-room/respond/route.ts`: API route for fixed-order AI instance response rounds and continue discussion rounds.
+- `src/app/api/chat-room/summarize/route.ts`: API route for internal moderator summaries.
 - `src/lib/chat-room/`: chat room types, seed data, room-title helper, prompts, mock AI fallback, AI orchestration, and localStorage persistence.
 - `src/app/globals.css`: Tailwind theme tokens.
 
@@ -23,7 +24,7 @@ The core domain object is `ChatRoom`. A chat room contains messages, AI instance
 
 No database, auth provider, or storage provider is wired yet. Chat rooms, AI instances, messages, and the active room are persisted in the browser via `localStorage` through `src/lib/chat-room/storage.ts`. This layer is intentionally small and easy to remove when database persistence is added.
 
-The current UI uses local React state for chat rooms, AI instances, and messages. AI instance replies are requested through `/api/chat-room/respond`; the route uses OpenAI when `OPENAI_API_KEY` exists and falls back to mock responses otherwise.
+The current UI uses local React state for chat rooms, AI instances, and messages. AI instance replies are requested through `/api/chat-room/respond`; the route uses OpenAI when `OPENAI_API_KEY` exists and falls back to mock responses otherwise. Moderator summaries are requested through `/api/chat-room/summarize` and are stored as summary messages in the same local chat history.
 
 ## Target System
 
@@ -51,7 +52,8 @@ Later integrations:
 - AI instances area for the current chat room.
 - Message input.
 - API-generated AI instance responses with mock fallback.
-- Final synthesis display.
+- Continue discussion action.
+- Internal moderator summary display.
 
 Keep this UI sparse and chat-like. Avoid dashboard patterns unless explicitly requested later.
 

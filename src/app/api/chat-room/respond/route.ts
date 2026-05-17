@@ -1,10 +1,12 @@
 import { generateAIResponses } from "@/lib/chat-room/ai-orchestrator";
+import type { DiscussionMode } from "@/lib/chat-room/role-prompts";
 import type { AIInstance, Message } from "@/lib/chat-room/types";
 
 type RespondRequestBody = {
-  latestUserMessage: string;
+  latestUserMessage?: string;
   aiInstances: AIInstance[];
   recentMessages: Message[];
+  mode?: DiscussionMode;
 };
 
 export async function POST(request: Request) {
@@ -31,12 +33,32 @@ function isRespondRequestBody(body: unknown): body is RespondRequestBody {
   }
 
   return (
-    typeof body.latestUserMessage === "string" &&
-    body.latestUserMessage.trim().length > 0 &&
+    isValidMode(body.mode) &&
+    isValidLatestUserMessage(body) &&
     Array.isArray(body.aiInstances) &&
     body.aiInstances.every(isAIInstance) &&
     Array.isArray(body.recentMessages) &&
     body.recentMessages.every(isMessage)
+  );
+}
+
+function isValidMode(value: unknown) {
+  return value === undefined || value === "reply" || value === "continue";
+}
+
+function isValidLatestUserMessage(body: Record<string, unknown>) {
+  const mode = body.mode ?? "reply";
+
+  if (mode === "continue") {
+    return (
+      body.latestUserMessage === undefined ||
+      typeof body.latestUserMessage === "string"
+    );
+  }
+
+  return (
+    typeof body.latestUserMessage === "string" &&
+    body.latestUserMessage.trim().length > 0
   );
 }
 
@@ -64,7 +86,12 @@ function isMessage(value: unknown): value is Message {
 }
 
 function isAuthorType(value: unknown) {
-  return value === "user" || value === "ai" || value === "system";
+  return (
+    value === "user" ||
+    value === "ai" ||
+    value === "system" ||
+    value === "summary"
+  );
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {

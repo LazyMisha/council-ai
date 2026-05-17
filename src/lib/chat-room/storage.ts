@@ -50,7 +50,8 @@ export function isValidMessage(item: unknown): item is Message {
   if (
     message.authorType !== "user" &&
     message.authorType !== "ai" &&
-    message.authorType !== "system"
+    message.authorType !== "system" &&
+    message.authorType !== "summary"
   )
     return false;
 

@@ -45,7 +45,7 @@ describe("isValidMessage", () => {
     const message: Message = {
       id: "msg-summary",
       authorType: "summary",
-      role: "Moderator Summary",
+      role: "Summary",
       content: "Key points and next steps.",
     };
 
@@ -437,7 +437,7 @@ describe("canSummarize persistence", () => {
             {
               id: "msg-2",
               authorType: "summary",
-              role: "Moderator Summary",
+              role: "Summary",
               content: "Key points.",
             },
           ],

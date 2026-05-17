@@ -48,14 +48,16 @@ describe("generateSummary", () => {
   it("creates a summary message with a clear author type", async () => {
     process.env.OPENAI_API_KEY = "test-key";
     openAIResponsesCreate.mockResolvedValue({
-      output_text: "Key points: Launch narrowly.\nNext steps: Pick owner.",
+      output_text:
+        "Short answer: Launch narrowly.\nKey points: One integration.\nMain disagreements / tradeoffs: Risk versus speed.\nAssumptions: Users are ready.\nRecommendation: Start small.\nNext steps: Pick owner.",
     });
 
     const result = await generateSummary({ recentMessages });
 
     expect(result.message.authorType).toBe("summary");
-    expect(result.message.role).toBe("Moderator Summary");
-    expect(result.message.content).toContain("Key points");
+    expect(result.message.role).toBe("Summary");
+    expect(result.message.content).toContain("Short answer");
+    expect(result.message.content).toContain("Next steps");
   });
 
   it("passes the full conversation to the summarizer prompt", async () => {
@@ -73,6 +75,7 @@ describe("generateSummary", () => {
     expect(call.input).toContain("Skeptic: The approval path is unclear.");
     expect(call.input).toContain("Recommendation");
     expect(call.input).toContain("Next steps");
+    expect(call.input).toContain("Assumptions");
   });
 
   it("uses a mock summary fallback when OPENAI_API_KEY is missing", async () => {
@@ -81,9 +84,23 @@ describe("generateSummary", () => {
     const result = await generateSummary({ recentMessages });
 
     expect(result.message.authorType).toBe("summary");
+    expect(result.message.role).toBe("Summary");
+    expect(result.message.content).toContain("Short answer");
     expect(result.message.content).toContain("Key points");
-    expect(result.message.content).toContain("Disagreements / tradeoffs");
+    expect(result.message.content).toContain("Main disagreements / tradeoffs");
+    expect(result.message.content).toContain("Assumptions");
     expect(result.message.content).toContain("Recommendation");
+    expect(result.message.content).toContain("Next steps");
     expect(openAIResponsesCreate).not.toHaveBeenCalled();
+  });
+
+  it("mock fallback builds content from conversation context", async () => {
+    delete process.env.OPENAI_API_KEY;
+
+    const result = await generateSummary({ recentMessages });
+
+    expect(result.message.content).toContain("Software Architect");
+    expect(result.message.content).toContain("Skeptic");
+    expect(result.message.content).toContain("Should we launch?");
   });
 });

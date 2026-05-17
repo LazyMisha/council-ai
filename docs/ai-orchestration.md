@@ -65,18 +65,18 @@ type RoleResponse = {
 };
 ```
 
-## Synthesis Shape
+## Summary Shape
 
-```ts
-type Synthesis = {
-  summary: string;
-  recommendation: string;
-  tradeoffs: string[];
-  openQuestions: string[];
-  nextSteps: string[];
-  confidence: "low" | "medium" | "high";
-};
-```
+Summaries are rendered as a special card in the chat history. The internal moderator produces plain text with six labeled sections:
+
+1. **Short answer** — one-sentence synthesis
+2. **Key points** — the most important takeaways
+3. **Main disagreements / tradeoffs** — where participants differ
+4. **Assumptions** — what the group took for granted
+5. **Recommendation** — a clear, actionable direction
+6. **Next steps** — specific actions to take
+
+The UI renders each section label in bold for easy scanning.
 
 ## Error Handling
 

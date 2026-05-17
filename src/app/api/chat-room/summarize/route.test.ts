@@ -6,7 +6,7 @@ vi.mock("@/lib/chat-room/summary-orchestrator", () => ({
     message: {
       id: "summary-1",
       authorType: "summary",
-      role: "Moderator Summary",
+      role: "Summary",
       content: "Summary.",
     },
   }),
@@ -53,6 +53,6 @@ describe("POST /api/chat-room/summarize", () => {
     expect(response.status).toBe(200);
     const json = await response.json();
     expect(json.message.authorType).toBe("summary");
-    expect(json.message.role).toBe("Moderator Summary");
+    expect(json.message.role).toBe("Summary");
   });
 });

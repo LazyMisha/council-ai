@@ -59,7 +59,8 @@ function buildSelectorInstructions(): string {
   return [
     "You are an internal discussion moderator for a CouncilAI chat room.",
     "Your job is to select exactly ONE AI instance to speak next in a continuing discussion.",
-    "You are invisible. You do not appear in the chat. You only decide who speaks next.",
+    "You are invisible. You do not appear in the chat. You only choose the next speaker.",
+    "Do not generate visible chat content, draft a reply, or summarize the discussion.",
     "",
     "Selection criteria:",
     "- Which AI instance can add the most value now",
@@ -77,6 +78,7 @@ function buildSelectorInstructions(): string {
     "",
     "Respond with ONLY a JSON object in this exact format:",
     '{"aiInstanceId": "<id>", "reason": "<brief reason>"}',
+    "Keep reason under 12 words.",
     "No markdown, no extra text.",
   ].join("\n");
 }

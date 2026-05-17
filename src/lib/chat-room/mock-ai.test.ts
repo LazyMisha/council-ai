@@ -107,12 +107,25 @@ describe("generateMockAIResponses", () => {
       aiInstances: predefinedInstances,
     });
 
-    expect(messages[0].content).toContain("technical angle");
-    expect(messages[1].content).toContain("value case");
-    expect(messages[2].content).toContain("weak assumption");
-    expect(messages[3].content).toContain("upside");
-    expect(messages[4].content).toContain("MVP");
-    expect(messages[5].content).toContain("tradeoff");
+    expect(messages[0].content).toContain("one clean integration boundary");
+    expect(messages[1].content).toContain("validate demand");
+    expect(messages[2].content).toContain("tested the critical path");
+    expect(messages[3].content).toContain("upside is real");
+    expect(messages[4].content).toContain("one user moment");
+    expect(messages[5].content).toContain("assumption fails");
+  });
+
+  it("creates short mock responses", () => {
+    const { messages } = generateMockAIResponses({
+      roundId: latestUserMessage.id,
+      latestUserMessage: latestUserMessage.content,
+      aiInstances: predefinedInstances,
+    });
+
+    for (const message of messages) {
+      const words = message.content.split(/\s+/).filter((w) => w.length > 0);
+      expect(words.length).toBeLessThanOrEqual(20);
+    }
   });
 
   it("creates a generic response for custom AI instances", () => {
@@ -130,7 +143,26 @@ describe("generateMockAIResponses", () => {
 
     expect(messages).toHaveLength(1);
     expect(messages[0].role).toBe("Legal Reviewer");
-    expect(messages[0].content).toContain("Legal Reviewer");
+    expect(messages[0].content).toContain("legal perspective");
+    expect(messages[0].content).not.toContain("Legal Reviewer:");
+  });
+
+  it("keeps custom mock responses under the visible AI word limit", () => {
+    const customInstance: AIInstance = {
+      id: "ai-custom",
+      name: "Longform Expert",
+      instructions:
+        "Write a comprehensive, detailed, heavily structured answer with extensive context and examples.",
+    };
+
+    const { messages } = generateMockAIResponses({
+      roundId: latestUserMessage.id,
+      latestUserMessage: latestUserMessage.content,
+      aiInstances: [customInstance],
+    });
+
+    const words = messages[0].content.split(/\s+/).filter((w) => w.length > 0);
+    expect(words.length).toBeLessThanOrEqual(80);
   });
 
   it("continues from existing context without a new user message", () => {
@@ -153,7 +185,7 @@ describe("generateMockAIResponses", () => {
     expect(messages[0].content).toContain(
       "Building on Business Analyst's point",
     );
-    expect(messages[0].content).toContain("still unresolved");
+    expect(messages[0].content).toContain("still unclear");
     expect(messages[1].content).toContain(
       "Building on Software Architect's point",
     );

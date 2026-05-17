@@ -71,10 +71,17 @@ function createMockSummary(messages: Message[]) {
 
   return [
     `Short answer: The discussion on "${userTopic}" surfaced useful input from ${roleList}, but the best path depends on a few key constraints.`,
-    "Key points: Start with the smallest viable scope. Validate assumptions early. Identify the riskiest dependency before committing.",
-    "Main disagreements / tradeoffs: Speed of launch versus depth of validation. Some participants favor momentum; others want more certainty before acting.",
-    "Assumptions: The team assumes the core user need is understood, that integration complexity is manageable, and that early feedback will be available quickly.",
+    "Key points:",
+    "- Start with the smallest viable scope.",
+    "- Validate assumptions early.",
+    "- Identify the riskiest dependency before committing.",
+    "Tradeoffs:",
+    "- Speed of launch versus depth of validation.",
+    "- Some participants favor momentum; others want more certainty before acting.",
     "Recommendation: Define the smallest experiment that tests the core assumption, then decide whether to scale based on evidence.",
-    "Next steps: Assign ownership for the experiment, set a short review date, and agree on what success looks like before starting.",
+    "Next steps:",
+    "- Assign ownership for the experiment.",
+    "- Set a short review date.",
+    "- Agree on what success looks like before starting.",
   ].join("\n");
 }

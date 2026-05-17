@@ -45,12 +45,7 @@ export function generateMockAIResponses({
       id: `${roundId}-${instance.id}-response`,
       authorType: "ai",
       role: instance.name,
-      content: createRoleResponse(
-        instance.name,
-        latestUserMessage,
-        workingMessages,
-        mode,
-      ),
+      content: createRoleResponse(instance, latestUserMessage, workingMessages, mode),
     };
 
     messages.push(message);
@@ -63,36 +58,38 @@ export function generateMockAIResponses({
 }
 
 function createRoleResponse(
-  roleName: string,
+  instance: AIInstance,
   topic: string | undefined,
   workingMessages: Message[],
   mode: DiscussionMode,
 ) {
+  const roleName = instance.name;
   const compactTopic = (topic ?? inferTopicFromMessages(workingMessages))
     .trim()
     .replace(/\s+/g, " ");
   const previousPoint = createPreviousPoint(workingMessages);
   const focus =
     mode === "continue"
-      ? "Focus on what is still unresolved and move the discussion toward a decision."
+      ? "What is still unclear?"
       : "";
 
   const predefined = predefinedRoles.find((pr) => pr.name === roleName);
 
   if (predefined) {
     const responses: Record<string, string> = {
-      "Software Architect": `${previousPoint}From a technical angle, "${compactTopic}" should start with the smallest implementation path and clear integration boundaries. ${focus}`,
-      "Business Analyst": `${previousPoint}The value case for "${compactTopic}" depends on validation signals, market timing, and whether success can be measured quickly. ${focus}`,
-      Skeptic: `${previousPoint}The weak assumption in "${compactTopic}" is that the main risk is already known. Pressure-test dependencies before committing. ${focus}`,
-      Optimist: `${previousPoint}"${compactTopic}" has upside if the team keeps momentum and turns early interest into visible opportunities. ${focus}`,
-      "Product Expert": `${previousPoint}For "${compactTopic}", keep the MVP focused on the core user moment and avoid adding UX surface area too early. ${focus}`,
-      Critic: `${previousPoint}The tradeoff in "${compactTopic}" is that clarity may expose flaws. Name those flaws before they become product debt. ${focus}`,
+      "Software Architect": `${previousPoint}Start with one clean integration boundary. ${focus}`,
+      "Business Analyst": `${previousPoint}Can we validate demand before building more? ${focus}`,
+      Skeptic: `${previousPoint}Have we tested the critical path? ${focus}`,
+      Optimist: `${previousPoint}If the core loop works, the upside is real. ${focus}`,
+      "Product Expert": `${previousPoint}Keep the MVP to one user moment. ${focus}`,
+      Critic: `${previousPoint}What happens if the assumption fails? ${focus}`,
     };
 
     return responses[roleName].trim();
   }
 
-  return `${previousPoint}${roleName} sees "${compactTopic}" as a topic worth examining from their specific perspective. ${focus}`.trim();
+  const instructionHint = createCustomInstructionHint(instance.instructions);
+  return `${previousPoint}${instructionHint}For "${compactTopic}", pick one concrete risk or next step before going further. ${focus}`.trim();
 }
 
 function createPreviousPoint(workingMessages: Message[]) {
@@ -117,4 +114,16 @@ function inferTopicFromMessages(messages: Message[]) {
     .find((message) => message.authorType === "user");
 
   return latestUserMessage?.content ?? "this discussion";
+}
+
+function createCustomInstructionHint(instructions: string) {
+  const compactInstructions = instructions.trim().replace(/\s+/g, " ");
+
+  if (!compactInstructions) {
+    return "";
+  }
+
+  const shortInstructions = compactInstructions.split(/\s+/).slice(0, 10).join(" ");
+
+  return `From that angle, ${shortInstructions.toLowerCase()} `;
 }

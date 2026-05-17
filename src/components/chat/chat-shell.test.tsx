@@ -134,4 +134,110 @@ describe("ChatShell", () => {
       expect(screen.queryByText("Summarize")).not.toBeInTheDocument();
     });
   });
+
+  it("shows Continue discussion after a summary exists", async () => {
+    const roomWithSummary = {
+      id: "room-1",
+      title: "Test Room",
+      aiInstances: [
+        { id: "ai-1", name: "Skeptic", instructions: "Focus on risks." },
+      ],
+      messages: [
+        { id: "msg-1", authorType: "user", content: "Hello" },
+        { id: "msg-2", authorType: "ai", role: "Skeptic", content: "Risky." },
+        {
+          id: "msg-summary",
+          authorType: "summary",
+          role: "Summary",
+          content: "Short answer: be careful.",
+        },
+      ],
+      canSummarize: false,
+    };
+
+    window.localStorage.setItem(
+      "council-ai-chat-rooms",
+      JSON.stringify({
+        chatRooms: [roomWithSummary],
+        activeRoomId: "room-1",
+      }),
+    );
+
+    render(<ChatShell />);
+
+    await waitFor(() => {
+      expect(screen.getByText("Continue discussion")).toBeInTheDocument();
+    });
+  });
+
+  it("shows Send after a summary exists", async () => {
+    const roomWithSummary = {
+      id: "room-1",
+      title: "Test Room",
+      aiInstances: [
+        { id: "ai-1", name: "Skeptic", instructions: "Focus on risks." },
+      ],
+      messages: [
+        { id: "msg-1", authorType: "user", content: "Hello" },
+        { id: "msg-2", authorType: "ai", role: "Skeptic", content: "Risky." },
+        {
+          id: "msg-summary",
+          authorType: "summary",
+          role: "Summary",
+          content: "Short answer: be careful.",
+        },
+      ],
+      canSummarize: false,
+    };
+
+    window.localStorage.setItem(
+      "council-ai-chat-rooms",
+      JSON.stringify({
+        chatRooms: [roomWithSummary],
+        activeRoomId: "room-1",
+      }),
+    );
+
+    render(<ChatShell />);
+
+    await waitFor(() => {
+      expect(screen.getByText("Send")).toBeInTheDocument();
+      expect(screen.getByPlaceholderText("Start a topic or reply...")).toBeInTheDocument();
+    });
+  });
+
+  it("shows Summarize when a summary message exists even if canSummarize is false", async () => {
+    const roomWithSummary = {
+      id: "room-1",
+      title: "Test Room",
+      aiInstances: [
+        { id: "ai-1", name: "Skeptic", instructions: "Focus on risks." },
+      ],
+      messages: [
+        { id: "msg-1", authorType: "user", content: "Hello" },
+        { id: "msg-2", authorType: "ai", role: "Skeptic", content: "Risky." },
+        {
+          id: "msg-summary",
+          authorType: "summary",
+          role: "Summary",
+          content: "Short answer: be careful.",
+        },
+      ],
+      canSummarize: false,
+    };
+
+    window.localStorage.setItem(
+      "council-ai-chat-rooms",
+      JSON.stringify({
+        chatRooms: [roomWithSummary],
+        activeRoomId: "room-1",
+      }),
+    );
+
+    render(<ChatShell />);
+
+    await waitFor(() => {
+      expect(screen.getByText("Summarize")).toBeInTheDocument();
+    });
+  });
 });

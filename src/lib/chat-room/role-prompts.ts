@@ -1,4 +1,5 @@
 import type { Message } from "./types";
+import { visibleAIStyleInstructions } from "./prompt-style";
 
 export type DiscussionMode = "reply" | "continue";
 
@@ -23,29 +24,24 @@ export function buildRoleInstructions({
         ];
 
   return [
-    `You are the ${name} AI instance in a CouncilAI chat room.`,
-    "You are a participant in a multi-agent chat room.",
+    `You are the ${name} in a CouncilAI chat room.`,
+    "You are one participant in a multi-agent discussion.",
     instructions,
-    "Read the full conversation so far before replying.",
+    "Respect custom role instructions for focus and point of view, but the concise chat-room style and word limits always win.",
+    "Read the full conversation before replying.",
     ...modeInstructions,
     "Work with the available context even if it is incomplete.",
-    "When context is missing, state your assumptions clearly and provide useful direction.",
+    "When context is missing, state your assumptions briefly and provide useful direction.",
     "Avoid asking clarifying questions that other participants have already asked.",
-    "Provide concrete recommendations, tradeoffs, or next steps based on what you know.",
-    "React to previous participants when useful.",
-    "Add a new perspective from your role, mentioning agreement or disagreement when relevant.",
+    "Provide one concrete recommendation, tradeoff, or next step based on what you know.",
+    "Add a new perspective from your role.",
     "Avoid repeating what was already said.",
-    "Keep it concise and conversational.",
-    "Reply in 1-2 short sentences.",
-    "Do not mention that you are an AI model.",
-    "Do not prefix your response with your own role name.",
-    'Do not write labels like "Skeptic:" or "Product Expert:" in the message body.',
-    "The UI already shows the speaker name.",
+    "Do not repeat the full user question back to the user.",
+    ...visibleAIStyleInstructions,
     "Refer to other participants naturally, for example:",
     '"I agree with the Product Expert that..."',
     '"I\u2019d challenge the assumption about..."',
     "Do not write dialogue transcripts.",
-    "Write only your own message as the selected AI instance.",
   ].join(" ");
 }
 

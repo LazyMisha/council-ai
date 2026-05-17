@@ -45,7 +45,7 @@ describe("generateAIResponses", () => {
     expect(result.messages).toHaveLength(1);
     expect(result.messages[0].authorType).toBe("ai");
     expect(result.messages[0].role).toBe("Skeptic");
-    expect(result.messages[0].content).toContain("weak assumption");
+    expect(result.messages[0].content).toContain("tested the critical path");
   });
 
   it("does not generate AI messages when no AI instances exist", async () => {
@@ -102,7 +102,8 @@ describe("generateAIResponses", () => {
     expect(result.messages).toHaveLength(1);
     expect(result.messages[0].authorType).toBe("ai");
     expect(result.messages[0].role).toBe("Legal Reviewer");
-    expect(result.messages[0].content).toContain("Legal Reviewer");
+    expect(result.messages[0].content).toContain("legal aspects");
+    expect(result.messages[0].content).not.toContain("Legal Reviewer:");
   });
 
   it("generates real AI responses in the active AI instance order", async () => {

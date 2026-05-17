@@ -47,7 +47,8 @@ function buildFinishInstructions(): string {
   return [
     "You are an internal finish detector for a CouncilAI chat room.",
     "Your job is to evaluate whether the discussion has enough useful information to summarize.",
-    "You are invisible. You do not appear in the chat. You only return a structured recommendation.",
+    "You are invisible. You do not appear in the chat. You only decide whether summarization is available.",
+    "Do not generate visible chat content, status copy, or summary text.",
     "",
     "Evaluate the conversation based on these criteria:",
     "",
@@ -65,6 +66,7 @@ function buildFinishInstructions(): string {
     '{"status": "ready_to_summarize", "reason": "brief reason"}',
     "or",
     '{"status": "continue_discussion", "reason": "brief reason"}',
+    "Keep reason under 12 words.",
     "No markdown, no extra text.",
   ].join("\\n");
 }

@@ -49,7 +49,7 @@ describe("generateSummary", () => {
     process.env.OPENAI_API_KEY = "test-key";
     openAIResponsesCreate.mockResolvedValue({
       output_text:
-        "Short answer: Launch narrowly.\nKey points: One integration.\nMain disagreements / tradeoffs: Risk versus speed.\nAssumptions: Users are ready.\nRecommendation: Start small.\nNext steps: Pick owner.",
+        "Short answer: Launch narrowly.\nKey points:\n- One integration.\nTradeoffs:\n- Risk versus speed.\nRecommendation: Start small.\nNext steps:\n- Pick owner.",
     });
 
     const result = await generateSummary({ recentMessages });
@@ -71,11 +71,16 @@ describe("generateSummary", () => {
     const call = openAIResponsesCreate.mock.calls[0][0];
 
     expect(call.instructions).toContain("neutral internal moderator");
+    expect(call.instructions).toContain("concise, practical decision output");
+    expect(call.instructions).toContain("Keep the whole summary under 180 words");
+    expect(call.instructions).toContain("Do not write long explanations or generic filler");
+    expect(call.instructions).toContain("Do not pretend certainty when the discussion is weak");
     expect(call.input).toContain("Software Architect: Start with one integration.");
     expect(call.input).toContain("Skeptic: The approval path is unclear.");
     expect(call.input).toContain("Recommendation");
     expect(call.input).toContain("Next steps");
-    expect(call.input).toContain("Assumptions");
+    expect(call.input).toContain("Tradeoffs");
+    expect(call.input).not.toContain("Assumptions");
   });
 
   it("uses a mock summary fallback when OPENAI_API_KEY is missing", async () => {
@@ -87,10 +92,10 @@ describe("generateSummary", () => {
     expect(result.message.role).toBe("Summary");
     expect(result.message.content).toContain("Short answer");
     expect(result.message.content).toContain("Key points");
-    expect(result.message.content).toContain("Main disagreements / tradeoffs");
-    expect(result.message.content).toContain("Assumptions");
+    expect(result.message.content).toContain("Tradeoffs");
     expect(result.message.content).toContain("Recommendation");
     expect(result.message.content).toContain("Next steps");
+    expect(result.message.content).not.toContain("Assumptions");
     expect(openAIResponsesCreate).not.toHaveBeenCalled();
   });
 

@@ -20,16 +20,53 @@ describe("role prompts", () => {
       });
       expect(instructions).toContain(name);
       expect(instructions).toContain(
-        "participant in a multi-agent chat room",
+        "one participant in a multi-agent discussion",
       );
-      expect(instructions).toContain("Read the full conversation so far");
+      expect(instructions).toContain("Read the full conversation before replying");
       expect(instructions).toContain(
         "previous AI messages in this same round",
       );
-      expect(instructions).toContain("1-2 short sentences");
-      expect(instructions).toContain("React to previous participants");
+      expect(instructions).toContain("Max 80 words");
+      expect(instructions).toContain("Prefer 2-4 short sentences");
+      expect(instructions).toContain("No essays");
+      expect(instructions).toContain("No report tone");
+      expect(instructions).toContain("No generic filler");
+      expect(instructions).toContain("React to the previous participant only when useful");
       expect(instructions).toContain("Avoid repeating what was already said");
+      expect(instructions).toContain('Do not say "As an AI"');
+      expect(instructions).toContain('"Certainly"');
+      expect(instructions).toContain('"Absolutely"');
+      expect(instructions).toContain("Do not repeat the full user question back to the user");
+      expect(instructions).toContain("Ask at most one question");
+      expect(instructions).toContain("Move the discussion forward");
+      expect(instructions).toContain("Do not prefix your response with your own role name");
+      expect(instructions).toContain('Do not write labels like "Skeptic:"');
+      expect(instructions).toContain("The UI already shows the speaker name");
     }
+  });
+
+  it("includes the simple-topic short reply rule", () => {
+    const instructions = buildRoleInstructions({
+      name: "Skeptic",
+      instructions: "Focus on risks.",
+    });
+
+    expect(instructions).toContain("For simple topics, use max 40 words");
+    expect(instructions).toContain("Do not over-analyze");
+    expect(instructions).toContain("Keep it casual and direct");
+  });
+
+  it("keeps custom AI instructions subordinate to concise chat style", () => {
+    const instructions = buildRoleInstructions({
+      name: "Legal Reviewer",
+      instructions: "Write a detailed legal memo with many sections.",
+    });
+
+    expect(instructions).toContain("Write a detailed legal memo with many sections.");
+    expect(instructions).toContain(
+      "the concise chat-room style and word limits always win",
+    );
+    expect(instructions).toContain("Max 80 words");
   });
 
   it("builds role input from recent context and the latest user message", () => {

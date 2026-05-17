@@ -104,6 +104,23 @@ describe("detectFinish", () => {
     expect(result).not.toHaveProperty("role");
   });
 
+  it("instructs the finish detector to return only a short internal decision", async () => {
+    process.env.OPENAI_API_KEY = "test-key";
+    openAIResponsesCreate.mockResolvedValue({
+      output_text:
+        '{"status": "ready_to_summarize", "reason": "Enough tradeoffs explored"}',
+    });
+
+    await detectFinish({ aiInstances: instances, recentMessages });
+
+    const call = openAIResponsesCreate.mock.calls[0][0];
+    expect(call.instructions).toContain(
+      "only decide whether summarization is available",
+    );
+    expect(call.instructions).toContain("Do not generate visible chat content, status copy, or summary text");
+    expect(call.instructions).toContain("Keep reason under 12 words");
+  });
+
   it("ignores unknown statuses from OpenAI and falls back", async () => {
     process.env.OPENAI_API_KEY = "test-key";
     openAIResponsesCreate.mockResolvedValue({

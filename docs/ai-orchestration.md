@@ -107,10 +107,27 @@ The `canSummarize` flag is persisted in `localStorage` as part of the chat room 
 
 When the finish detector returns anything other than `ready_to_summarize`, no status text is shown. Continue discussion remains available at all times after an AI discussion round exists.
 
+## Auto-Discussion Mode
+
+An optional Auto-discuss action lets the user run multiple Continue discussion turns automatically.
+
+Behavior:
+- Shown after the first AI discussion round exists.
+- When clicked, the app enters auto-discussion mode.
+- Each turn uses the existing smart speaker selector to pick one AI instance.
+- After each AI response, the finish detector runs. If it says `ready_to_summarize`, the Summarize button is shown but Auto-discuss keeps running.
+- Auto-discussion stops when:
+  - the user clicks Stop
+  - a max turn limit (20) is reached
+  - an API error occurs
+
+The Stop button appears while auto-discussion is running and prevents future turns from starting. In-flight requests may still complete.
+
+Continue discussion is disabled while auto-discussion is running. Send is disabled while auto-discussion is running. Summarize remains available if it becomes available during auto-discussion. The existing thinking indicator shows during auto-discussion.
+
 ## Future Improvements
 
 - Streaming role responses.
-- Auto-discussion mode.
 - Model selection by role.
 - Uploaded context.
 - Evaluation tests for synthesis quality.

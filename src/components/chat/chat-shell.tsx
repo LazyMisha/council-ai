@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { FormEvent, KeyboardEvent } from "react";
 import { isPredefinedName, predefinedRoles } from "@/lib/chat-room/data";
 import { getRoleAccent } from "@/lib/chat-room/role-colors";
@@ -11,6 +11,7 @@ import {
   saveStorageState,
 } from "@/lib/chat-room/storage";
 import type { AIInstance, ChatRoom, Message } from "@/lib/chat-room/types";
+import { useAutoScroll } from "./use-auto-scroll";
 
 const newId = (prefix: string) =>
   `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
@@ -53,6 +54,10 @@ export function ChatShell() {
   const [renameError, setRenameError] = useState<string | null>(null);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
   const [confirmingClear, setConfirmingClear] = useState(false);
+  const [autoDiscussingRoomIds, setAutoDiscussingRoomIds] = useState<string[]>(
+    [],
+  );
+  const stoppingAutoDiscussRef = useRef<Set<string>>(new Set());
 
   useEffect(() => {
     const state = loadStorageState();
@@ -87,11 +92,26 @@ export function ChatShell() {
     ? activeRoom.aiInstances.map((instance) => instance.name)
     : [];
   const isThinking = activeRoom
-    ? thinkingRoomIds.includes(activeRoom.id)
+    ? thinkingRoomIds.includes(activeRoom.id) ||
+      autoDiscussingRoomIds.includes(activeRoom.id)
     : false;
+
+  const isAutoDiscussing = activeRoom
+    ? autoDiscussingRoomIds.includes(activeRoom.id)
+    : false;
+
+
+  const hasSummary = activeRoom
+    ? activeRoom.messages.some((message) => message.authorType === "summary")
+    : false;
+
   const hasAIDiscussionRound = activeRoom
     ? activeRoom.messages.some((message) => message.authorType === "ai")
     : false;
+
+  const { containerRef, showScrollButton, scrollToBottom } = useAutoScroll([
+    activeRoom?.messages.length ?? 0,
+  ]);
 
   const createChatRoom = () => {
     const room: ChatRoom = {
@@ -563,6 +583,101 @@ export function ChatShell() {
     }
   };
 
+  const autoDiscuss = async () => {
+    if (
+      !activeRoom ||
+      activeRoom.aiInstances.length === 0 ||
+      autoDiscussingRoomIds.includes(activeRoom.id)
+    ) {
+      return;
+    }
+
+    const roomId = activeRoom.id;
+    const maxTurns = 20;
+
+    setAutoDiscussingRoomIds((ids) => [...ids, roomId]);
+
+    let currentMessages = [...activeRoom.messages];
+    const aiInstances = activeRoom.aiInstances;
+
+    try {
+      for (let turn = 0; turn < maxTurns; turn++) {
+        if (stoppingAutoDiscussRef.current.has(roomId)) {
+          break;
+        }
+
+        const [response] = await Promise.all([
+          fetch("/api/chat-room/respond", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              mode: "continue",
+              aiInstances,
+              recentMessages: currentMessages,
+            }),
+          }),
+          wait(700),
+        ]);
+
+        if (!response.ok) {
+          break;
+        }
+
+        const data = (await response.json()) as { messages?: Message[] };
+        const responseMessages = data.messages ?? [];
+
+        if (responseMessages.length === 0) {
+          break;
+        }
+
+        currentMessages = [...currentMessages, ...responseMessages];
+
+        setChatRooms((rooms) =>
+          rooms.map((room) =>
+            room.id === roomId
+              ? { ...room, messages: [...room.messages, ...responseMessages] }
+              : room,
+          ),
+        );
+
+        const finishResponse = await fetch("/api/chat-room/finish", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            aiInstances,
+            recentMessages: currentMessages,
+          }),
+        });
+
+        if (finishResponse.ok) {
+          const finishData = (await finishResponse.json()) as {
+            status: string;
+          };
+
+          if (finishData.status === "ready_to_summarize") {
+            setChatRooms((rooms) =>
+              rooms.map((room) =>
+                room.id === roomId ? { ...room, canSummarize: true } : room,
+              ),
+            );
+          }
+        }
+      }
+    } finally {
+      setAutoDiscussingRoomIds((ids) => ids.filter((id) => id !== roomId));
+      stoppingAutoDiscussRef.current.delete(roomId);
+    }
+  };
+
+  const stopAutoDiscuss = () => {
+    if (!activeRoom) return;
+    stoppingAutoDiscussRef.current.add(activeRoom.id);
+  };
+
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     void sendMessage();
@@ -893,7 +1008,7 @@ export function ChatShell() {
               </div>
             </div>
 
-            <div className="min-h-0 flex-1 overflow-y-auto px-5 py-10">
+            <div ref={containerRef} className="min-h-0 flex-1 overflow-y-auto px-5 pt-10 pb-20">
               <div className="mx-auto max-w-3xl lg:max-w-4xl">
                 {activeRoom.messages.length === 0 ? (
                   <div className="mb-10 text-center">
@@ -1001,6 +1116,28 @@ export function ChatShell() {
                       AI instances are thinking...
                     </p>
                   ) : null}
+
+                  {showScrollButton ? (
+                    <button
+                      type="button"
+                      onClick={scrollToBottom}
+                      className="fixed bottom-28 right-8 z-10 flex h-8 items-center gap-1.5 rounded-full border border-border-subtle bg-surface px-3 text-xs font-medium text-text-secondary shadow-sm hover:bg-accent-muted hover:text-accent"
+                    >
+                      <svg
+                        width="12"
+                        height="12"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      >
+                        <polyline points="6 9 12 15 18 9" />
+                      </svg>
+                      New messages
+                    </button>
+                  ) : null}
                 </div>
               </div>
             </div>
@@ -1015,19 +1152,46 @@ export function ChatShell() {
 
                 {hasAIDiscussionRound ? (
                   <div className="mb-3 flex flex-wrap gap-2">
-                    <button
-                      type="button"
-                      onClick={continueDiscussion}
-                      disabled={isThinking || activeRoom.aiInstances.length === 0}
-                      className="h-8 rounded-md border border-border-subtle bg-surface px-3 text-sm text-text-secondary hover:bg-background disabled:cursor-not-allowed disabled:opacity-50 cursor-pointer"
-                    >
-                      Continue discussion
-                    </button>
-                    {activeRoom?.canSummarize ? (
+                    {activeRoom &&
+                    autoDiscussingRoomIds.includes(activeRoom.id) ? (
+                      <button
+                        type="button"
+                        onClick={stopAutoDiscuss}
+                        className="h-8 rounded-md border border-red-500/50 bg-red-500/10 px-3 text-sm font-medium text-red-600 hover:bg-red-500/20 cursor-pointer"
+                      >
+                        Stop
+                      </button>
+                    ) : (
+                      <>
+                        <button
+                          type="button"
+                          onClick={continueDiscussion}
+                          disabled={
+                            isAutoDiscussing ||
+                            isThinking || activeRoom.aiInstances.length === 0
+                          }
+                          className="h-8 rounded-md border border-border-subtle bg-surface px-3 text-sm text-text-secondary hover:bg-background disabled:cursor-not-allowed disabled:opacity-50 cursor-pointer"
+                        >
+                          Continue discussion
+                        </button>
+                        <button
+                          type="button"
+                          onClick={autoDiscuss}
+                          disabled={
+                            isAutoDiscussing ||
+                            isThinking || activeRoom.aiInstances.length === 0
+                          }
+                          className="h-8 rounded-md border border-border-subtle bg-surface px-3 text-sm text-text-secondary hover:bg-background disabled:cursor-not-allowed disabled:opacity-50 cursor-pointer"
+                        >
+                          Auto-discuss
+                        </button>
+                      </>
+                    )}
+                    {activeRoom?.canSummarize || hasSummary ? (
                       <button
                         type="button"
                         onClick={summarizeDiscussion}
-                        disabled={isThinking}
+                        disabled={thinkingRoomIds.includes(activeRoom.id)}
                         className="h-8 rounded-md border border-border-subtle bg-surface px-3 text-sm font-medium text-accent hover:bg-accent-muted disabled:cursor-not-allowed disabled:opacity-50 cursor-pointer"
                       >
                         Summarize
@@ -1044,12 +1208,14 @@ export function ChatShell() {
                     value={draft}
                     onChange={(event) => setDraft(event.target.value)}
                     onKeyDown={handleInputKeyDown}
+                    disabled={isAutoDiscussing}
                     aria-label="Start a topic or reply"
                     placeholder="Start a topic or reply..."
                     className="h-11 min-w-0 flex-1 bg-transparent px-2 text-sm outline-none placeholder:text-text-tertiary"
                   />
                   <button
                     type="submit"
+                    disabled={isAutoDiscussing}
                     className="h-11 rounded-md border border-accent bg-surface px-4 text-sm font-medium text-accent hover:bg-accent-muted cursor-pointer"
                   >
                     Send

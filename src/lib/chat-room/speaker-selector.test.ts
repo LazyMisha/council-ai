@@ -182,6 +182,25 @@ describe("selectSpeaker", () => {
     expect(result).not.toHaveProperty("authorType");
     expect(result).not.toHaveProperty("role");
   });
+
+  it("instructs the selector to choose only the next speaker", async () => {
+    process.env.OPENAI_API_KEY = "test-key";
+    openAIResponsesCreate.mockResolvedValue({
+      output_text:
+        '{"aiInstanceId": "ai-1", "reason": "Can challenge assumptions"}',
+    });
+
+    await selectSpeaker({
+      aiInstances: [{ id: "ai-1", name: "Skeptic", instructions: "Risks." }],
+      recentMessages: [],
+    });
+
+    const call = openAIResponsesCreate.mock.calls[0][0];
+    expect(call.instructions).toContain("only choose the next speaker");
+    expect(call.instructions).toContain("Do not generate visible chat content");
+    expect(call.instructions).toContain("Keep reason under 12 words");
+    expect(call.instructions).not.toContain("draft a visible reply");
+  });
 });
 
 describe("fallbackSelectSpeaker", () => {

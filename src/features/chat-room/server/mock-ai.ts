@@ -1,6 +1,6 @@
-import { predefinedRoles } from "./data";
+import { predefinedRoles } from "../domain/data";
 import type { DiscussionMode } from "./role-prompts";
-import type { AIInstance, Message } from "./types";
+import type { AIInstance, Message } from "../domain/types";
 
 export const noAIInstancesHint = "Add AI instances to start a discussion.";
 

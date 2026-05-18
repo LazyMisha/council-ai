@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import { fallbackSelectSpeaker, selectSpeaker } from "./speaker-selector";
-import type { AIInstance, Message } from "./types";
+import type { AIInstance, Message } from "../domain/types";
 
 const openAIResponsesCreate = vi.hoisted(() => vi.fn());
 

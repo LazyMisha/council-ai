@@ -1,0 +1,110 @@
+import type { FormEvent, KeyboardEvent } from "react";
+import type { ChatRoomController } from "../client/use-chat-room-controller";
+import { Button } from "@/components/ui";
+
+type ChatComposerProps = {
+  controller: ChatRoomController;
+};
+
+export function ChatComposer({ controller }: ChatComposerProps) {
+  const activeRoom = controller.activeRoom;
+  if (!activeRoom) return null;
+
+  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    void controller.sendMessage();
+  };
+
+  const handleInputKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
+    if (event.key === "Enter") {
+      event.preventDefault();
+      void controller.sendMessage();
+    }
+  };
+
+  return (
+    <div className="shrink-0 border-t border-border-subtle bg-surface px-5 pb-5 pt-4">
+      <div className="mx-auto max-w-3xl lg:max-w-4xl">
+        {activeRoom.aiInstances.length === 0 ? (
+          <p className="mb-3 text-sm text-text-tertiary">
+            Add AI instances to start a discussion.
+          </p>
+        ) : null}
+
+        {controller.hasAIDiscussionRound ? (
+          <div className="mb-3 flex flex-wrap gap-2">
+            {controller.isAutoDiscussing ? (
+              <Button
+                variant="dangerSubtle"
+                size="sm"
+                onClick={controller.stopAutoDiscuss}
+              >
+                Stop
+              </Button>
+            ) : (
+              <>
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={controller.continueDiscussion}
+                  disabled={
+                    controller.isAutoDiscussing ||
+                    controller.isThinking ||
+                    activeRoom.aiInstances.length === 0
+                  }
+                >
+                  Continue discussion
+                </Button>
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={controller.autoDiscuss}
+                  disabled={
+                    controller.isAutoDiscussing ||
+                    controller.isThinking ||
+                    activeRoom.aiInstances.length === 0
+                  }
+                >
+                  Auto-discuss
+                </Button>
+              </>
+            )}
+            {activeRoom.canSummarize || controller.hasSummary ? (
+              <Button
+                variant="primary"
+                size="sm"
+                onClick={controller.summarizeDiscussion}
+                disabled={controller.isThinking && !controller.isAutoDiscussing}
+              >
+                Summarize
+              </Button>
+            ) : null}
+          </div>
+        ) : null}
+
+        <form
+          onSubmit={handleSubmit}
+          className="flex gap-3 rounded-lg border border-border-subtle bg-surface p-3"
+        >
+          <input
+            value={controller.draft}
+            onChange={(event) => controller.setDraft(event.target.value)}
+            onKeyDown={handleInputKeyDown}
+            disabled={controller.isAutoDiscussing}
+            aria-label="Start a topic or reply"
+            placeholder="Start a topic or reply..."
+            className="h-11 min-w-0 flex-1 bg-transparent px-2 text-sm outline-none placeholder:text-text-tertiary"
+          />
+          <Button
+            type="submit"
+            variant="primary"
+            disabled={controller.isAutoDiscussing}
+            className="h-11 px-4"
+          >
+            Send
+          </Button>
+        </form>
+      </div>
+    </div>
+  );
+}

@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { generateSummary } from "./summary-orchestrator";
-import type { Message } from "./types";
+import type { Message } from "../domain/types";
 
 const recentMessages: Message[] = [
   {

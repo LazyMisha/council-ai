@@ -1,5 +1,5 @@
 import { generateMockAIResponses } from "./mock-ai";
-import type { AIInstance, Message } from "./types";
+import type { AIInstance, Message } from "../domain/types";
 
 const latestUserMessage: Message = {
   id: "message-1",

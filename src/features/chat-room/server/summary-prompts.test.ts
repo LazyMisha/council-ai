@@ -1,5 +1,5 @@
 import { buildSummaryInput, buildSummaryInstructions } from "./summary-prompts";
-import type { Message } from "./types";
+import type { Message } from "../domain/types";
 
 describe("summary prompts", () => {
   it("keeps the summarizer structured but concise", () => {

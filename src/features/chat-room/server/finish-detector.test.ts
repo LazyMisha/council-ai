@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { detectFinish, fallbackDetectFinish } from "./finish-detector";
-import type { AIInstance, Message } from "./types";
+import type { AIInstance, Message } from "../domain/types";
 
 const openAIResponsesCreate = vi.hoisted(() => vi.fn());
 

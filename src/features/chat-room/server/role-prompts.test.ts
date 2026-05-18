@@ -1,5 +1,5 @@
 import { buildRoleInput, buildRoleInstructions } from "./role-prompts";
-import type { Message } from "./types";
+import type { Message } from "../domain/types";
 
 const roleNames = [
   "Software Architect",

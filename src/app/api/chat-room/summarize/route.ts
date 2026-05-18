@@ -1,9 +1,5 @@
-import { generateSummary } from "@/lib/chat-room/summary-orchestrator";
-import type { Message } from "@/lib/chat-room/types";
-
-type SummarizeRequestBody = {
-  recentMessages: Message[];
-};
+import { isSummarizeRequestBody } from "@/features/chat-room/api/contracts";
+import { generateSummary } from "@/features/chat-room/server/summary-orchestrator";
 
 export async function POST(request: Request) {
   let body: unknown;
@@ -21,36 +17,4 @@ export async function POST(request: Request) {
   const { message } = await generateSummary(body);
 
   return Response.json({ message });
-}
-
-function isSummarizeRequestBody(body: unknown): body is SummarizeRequestBody {
-  return (
-    isRecord(body) &&
-    Array.isArray(body.recentMessages) &&
-    body.recentMessages.every(isMessage)
-  );
-}
-
-function isMessage(value: unknown): value is Message {
-  return (
-    isRecord(value) &&
-    typeof value.id === "string" &&
-    isAuthorType(value.authorType) &&
-    typeof value.content === "string" &&
-    (value.role === undefined ||
-      (typeof value.role === "string" && value.role.trim().length > 0))
-  );
-}
-
-function isAuthorType(value: unknown) {
-  return (
-    value === "user" ||
-    value === "ai" ||
-    value === "system" ||
-    value === "summary"
-  );
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null;
 }

@@ -1,4 +1,4 @@
-import type { Message } from "./types";
+import type { Message } from "../domain/types";
 import { visibleAIStyleInstructions } from "./prompt-style";
 
 export type DiscussionMode = "reply" | "continue";

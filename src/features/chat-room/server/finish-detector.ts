@@ -1,7 +1,5 @@
-import OpenAI from "openai";
-import type { AIInstance, Message } from "./types";
-
-const model = "gpt-4o-mini";
+import type { AIInstance, Message } from "../domain/types";
+import { chatRoomModel, createOpenAIClient } from "./openai";
 
 export type FinishDecision = {
   status: "ready_to_summarize" | "continue_discussion";
@@ -15,17 +13,15 @@ export async function detectFinish({
   aiInstances: AIInstance[];
   recentMessages: Message[];
 }): Promise<FinishDecision> {
-  if (!process.env.OPENAI_API_KEY) {
+  const client = createOpenAIClient();
+
+  if (!client) {
     return fallbackDetectFinish(recentMessages);
   }
 
   try {
-    const client = new OpenAI({
-      apiKey: process.env.OPENAI_API_KEY,
-    });
-
     const response = await client.responses.create({
-      model,
+      model: chatRoomModel,
       instructions: buildFinishInstructions(),
       input: buildFinishInput({ aiInstances, recentMessages }),
     });

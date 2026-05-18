@@ -1,7 +1,5 @@
-import OpenAI from "openai";
-import type { AIInstance, Message } from "./types";
-
-const model = "gpt-4o-mini";
+import type { AIInstance, Message } from "../domain/types";
+import { chatRoomModel, createOpenAIClient } from "./openai";
 
 export type SpeakerSelection = {
   aiInstanceId: string;
@@ -19,17 +17,15 @@ export async function selectSpeaker({
     return { aiInstanceId: "", reason: "No AI instances available." };
   }
 
-  if (!process.env.OPENAI_API_KEY) {
+  const client = createOpenAIClient();
+
+  if (!client) {
     return fallbackSelectSpeaker(aiInstances, recentMessages);
   }
 
   try {
-    const client = new OpenAI({
-      apiKey: process.env.OPENAI_API_KEY,
-    });
-
     const response = await client.responses.create({
-      model,
+      model: chatRoomModel,
       instructions: buildSelectorInstructions(),
       input: buildSelectorInput({ aiInstances, recentMessages }),
     });

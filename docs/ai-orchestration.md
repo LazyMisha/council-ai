@@ -2,7 +2,7 @@
 
 CouncilAI orchestration happens inside a chat room. The user sends a message, selected AI instances respond according to their roles, the user can manually continue the discussion, and an internal moderator can create a concise summary.
 
-The first minimal AI orchestration route is implemented at `/api/chat-room/respond`. It uses `OPENAI_API_KEY` for OpenAI-backed role responses and falls back to `generateMockAIResponses` in `src/lib/chat-room/mock-ai.ts` when the key is missing or a provider call fails. Internal summaries are generated through `/api/chat-room/summarize` and fall back to a mock moderator summary.
+The first minimal AI orchestration route is implemented at `/api/chat-room/respond`. It uses `OPENAI_API_KEY` for OpenAI-backed role responses and falls back to `generateMockAIResponses` in `src/features/chat-room/server/mock-ai.ts` when the key is missing or a provider call fails. Internal summaries are generated through `/api/chat-room/summarize` and fall back to a mock moderator summary.
 
 ## MVP Model
 

@@ -1,10 +1,10 @@
-import OpenAI from "openai";
 import { generateMockAIResponses } from "./mock-ai";
+import { chatRoomModel, createOpenAIClient } from "./openai";
 import { cleanAIOutput } from "./output-cleanup";
 import { buildRoleInput, buildRoleInstructions } from "./role-prompts";
 import { selectSpeaker } from "./speaker-selector";
 import type { DiscussionMode } from "./role-prompts";
-import type { AIInstance, Message } from "./types";
+import type { AIInstance, Message } from "../domain/types";
 
 type GenerateAIResponsesInput = {
   latestUserMessage?: string;
@@ -16,8 +16,6 @@ type GenerateAIResponsesInput = {
 type GenerateAIResponsesResult = {
   messages: Message[];
 };
-
-const model = "gpt-4o-mini";
 
 export async function generateAIResponses({
   latestUserMessage,
@@ -47,7 +45,9 @@ export async function generateAIResponses({
     instancesToRespond = selected ? [selected] : [aiInstances[0]];
   }
 
-  if (!process.env.OPENAI_API_KEY) {
+  const client = createOpenAIClient();
+
+  if (!client) {
     return cleanMockMessages(
       generateMockAIResponses({
         roundId,
@@ -60,16 +60,12 @@ export async function generateAIResponses({
   }
 
   try {
-    const client = new OpenAI({
-      apiKey: process.env.OPENAI_API_KEY,
-    });
-
     const messages: Message[] = [];
     const workingMessages = [...recentMessages];
 
     for (const instance of instancesToRespond) {
       const response = await client.responses.create({
-        model,
+        model: chatRoomModel,
         instructions: buildRoleInstructions({
           name: instance.name,
           instructions: instance.instructions,

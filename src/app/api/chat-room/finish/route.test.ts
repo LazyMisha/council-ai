@@ -3,7 +3,7 @@ import { POST } from "./route";
 
 const detectFinish = vi.hoisted(() => vi.fn());
 
-vi.mock("@/lib/chat-room/finish-detector", () => ({
+vi.mock("@/features/chat-room/server/finish-detector", () => ({
   detectFinish,
 }));
 

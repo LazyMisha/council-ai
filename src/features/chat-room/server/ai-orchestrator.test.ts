@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { generateAIResponses } from "./ai-orchestrator";
-import type { AIInstance, Message } from "./types";
+import type { AIInstance, Message } from "../domain/types";
 
 const instances: AIInstance[] = [
   { id: "ai-1", name: "Skeptic", instructions: "Focus on risks." },

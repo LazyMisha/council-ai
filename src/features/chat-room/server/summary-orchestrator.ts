@@ -1,6 +1,6 @@
-import OpenAI from "openai";
+import { chatRoomModel, createOpenAIClient } from "./openai";
 import { buildSummaryInput, buildSummaryInstructions } from "./summary-prompts";
-import type { Message } from "./types";
+import type { Message } from "../domain/types";
 
 type GenerateSummaryInput = {
   recentMessages: Message[];
@@ -10,26 +10,21 @@ type GenerateSummaryResult = {
   message: Message;
 };
 
-const model = "gpt-4o-mini";
-
 export async function generateSummary({
   recentMessages,
 }: GenerateSummaryInput): Promise<GenerateSummaryResult> {
   const summaryId = `summary-${Date.now()}`;
+  const client = createOpenAIClient();
 
-  if (!process.env.OPENAI_API_KEY) {
+  if (!client) {
     return {
       message: createSummaryMessage(summaryId, createMockSummary(recentMessages)),
     };
   }
 
   try {
-    const client = new OpenAI({
-      apiKey: process.env.OPENAI_API_KEY,
-    });
-
     const response = await client.responses.create({
-      model,
+      model: chatRoomModel,
       instructions: buildSummaryInstructions(),
       input: buildSummaryInput({ messages: recentMessages }),
     });

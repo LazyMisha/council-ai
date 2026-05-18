@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import { POST } from "./route";
 
-vi.mock("@/lib/chat-room/summary-orchestrator", () => ({
+vi.mock("@/features/chat-room/server/summary-orchestrator", () => ({
   generateSummary: vi.fn().mockResolvedValue({
     message: {
       id: "summary-1",

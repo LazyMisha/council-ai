@@ -6,12 +6,16 @@ The core domain object is `ChatRoom`. A chat room contains messages, AI instance
 
 ## Current Repository Shape
 
-- `src/app/page.tsx`: renders the main chat room UI directly.
-- `src/app/chat/page.tsx`: alternate route for the same chat room UI.
-- `src/components/chat/`: minimal chat shell components.
+- `src/app/page.tsx`: renders the main chat room feature shell.
+- `src/app/chat/page.tsx`: alternate route for the same chat room feature shell.
+- `src/components/ui/`: small shared UI primitives such as buttons, dialogs, fields, menus, and popovers.
+- `src/features/chat-room/ui/`: chat-specific UI modules for the shell, sidebar, messages, role picker, composer, and dialogs.
+- `src/features/chat-room/client/`: browser state, local API calls, and chat room interaction actions.
 - `src/app/api/chat-room/respond/route.ts`: API route for fixed-order AI instance response rounds and continue discussion rounds.
 - `src/app/api/chat-room/summarize/route.ts`: API route for internal moderator summaries.
-- `src/lib/chat-room/`: chat room types, seed data, room-title helper, prompts, mock AI fallback, AI orchestration, and localStorage persistence.
+- `src/features/chat-room/api/`: shared request contract validators for chat room API routes.
+- `src/features/chat-room/domain/`: chat room types, seed data, room-title helper, role colors, pure state mutations, and localStorage persistence.
+- `src/features/chat-room/server/`: prompts, mock AI fallback, OpenAI client setup, AI orchestration, speaker selection, finish detection, and summary generation.
 - `src/app/globals.css`: Tailwind theme tokens.
 
 ## Current Runtime
@@ -22,9 +26,9 @@ The core domain object is `ChatRoom`. A chat room contains messages, AI instance
 - Tailwind CSS
 - Vitest and React Testing Library
 
-No database, auth provider, or storage provider is wired yet. Chat rooms, AI instances, messages, and the active room are persisted in the browser via `localStorage` through `src/lib/chat-room/storage.ts`. This layer is intentionally small and easy to remove when database persistence is added.
+No database, auth provider, or storage provider is wired yet. Chat rooms, AI instances, messages, and the active room are persisted in the browser via `localStorage` through `src/features/chat-room/domain/storage.ts`. This layer is intentionally small and easy to remove when database persistence is added.
 
-The current UI uses local React state for chat rooms, AI instances, and messages. AI instance replies are requested through `/api/chat-room/respond`; the route uses OpenAI when `OPENAI_API_KEY` exists and falls back to mock responses otherwise. Moderator summaries are requested through `/api/chat-room/summarize` and are stored as summary messages in the same local chat history.
+The current UI uses local React state for chat rooms, AI instances, and messages through chat-room client actions. AI instance replies are requested through `/api/chat-room/respond`; the route uses OpenAI when `OPENAI_API_KEY` exists and falls back to mock responses otherwise. Moderator summaries are requested through `/api/chat-room/summarize` and are stored as summary messages in the same local chat history.
 
 ## Target System
 

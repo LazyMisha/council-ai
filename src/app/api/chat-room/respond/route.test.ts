@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import { POST } from "./route";
 
-vi.mock("@/lib/chat-room/ai-orchestrator", () => ({
+vi.mock("@/features/chat-room/server/ai-orchestrator", () => ({
   generateAIResponses: vi.fn().mockResolvedValue({ messages: [] }),
 }));
 
@@ -29,7 +29,7 @@ describe("POST /api/chat-room/respond", () => {
 
   it("allows continue mode without latestUserMessage", async () => {
     const { generateAIResponses } = await import(
-      "@/lib/chat-room/ai-orchestrator"
+      "@/features/chat-room/server/ai-orchestrator"
     );
     vi.mocked(generateAIResponses).mockResolvedValue({
       messages: [
@@ -126,7 +126,7 @@ describe("POST /api/chat-room/respond", () => {
 
   it("returns 200 with messages for a valid body", async () => {
     const { generateAIResponses } = await import(
-      "@/lib/chat-room/ai-orchestrator"
+      "@/features/chat-room/server/ai-orchestrator"
     );
     vi.mocked(generateAIResponses).mockResolvedValue({
       messages: [

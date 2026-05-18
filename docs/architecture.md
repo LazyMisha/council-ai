@@ -11,7 +11,8 @@ The core domain object is `ChatRoom`. A chat room contains messages, AI instance
 - `src/components/ui/`: small shared UI primitives such as buttons, dialogs, fields, menus, and popovers.
 - `src/features/chat-room/ui/`: chat-specific UI modules for the shell, sidebar, messages, role picker, composer, and dialogs.
 - `src/features/chat-room/client/`: browser state, local API calls, and chat room interaction actions.
-- `src/app/api/chat-room/respond/route.ts`: API route for fixed-order AI instance response rounds and continue discussion rounds.
+- `src/app/api/chat-room/select-speaker/route.ts`: API route for choosing the next AI instance to answer.
+- `src/app/api/chat-room/respond/route.ts`: API route for selected AI instance responses.
 - `src/app/api/chat-room/summarize/route.ts`: API route for internal moderator summaries.
 - `src/features/chat-room/api/`: shared request contract validators for chat room API routes.
 - `src/features/chat-room/domain/`: chat room types, seed data, room-title helper, role colors, pure state mutations, and localStorage persistence.
@@ -28,7 +29,7 @@ The core domain object is `ChatRoom`. A chat room contains messages, AI instance
 
 No database, auth provider, or storage provider is wired yet. Chat rooms, AI instances, messages, and the active room are persisted in the browser via `localStorage` through `src/features/chat-room/domain/storage.ts`. This layer is intentionally small and easy to remove when database persistence is added.
 
-The current UI uses local React state for chat rooms, AI instances, and messages through chat-room client actions. AI instance replies are requested through `/api/chat-room/respond`; the route uses OpenAI when `OPENAI_API_KEY` exists and falls back to mock responses otherwise. Moderator summaries are requested through `/api/chat-room/summarize` and are stored as summary messages in the same local chat history.
+The current UI uses local React state for chat rooms, AI instances, and messages through chat-room client actions. The next AI instance is selected through `/api/chat-room/select-speaker`, and its reply is requested through `/api/chat-room/respond`; these routes use OpenAI when `OPENAI_API_KEY` exists and fall back to deterministic mock behavior otherwise. Moderator summaries are requested through `/api/chat-room/summarize` and are stored as summary messages in the same local chat history.
 
 ## Target System
 
@@ -56,7 +57,7 @@ Later integrations:
 - AI instances area for the current chat room.
 - Message input.
 - API-generated AI instance responses with mock fallback.
-- Continue discussion action.
+- Auto-discuss action for selected-speaker continuation.
 - Internal moderator summary display.
 
 Keep this UI sparse and chat-like. Avoid dashboard patterns unless explicitly requested later.

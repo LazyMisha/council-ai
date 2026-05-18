@@ -96,6 +96,23 @@ describe("POST /api/chat-room/respond", () => {
     expect(response.status).toBe(400);
   });
 
+  it("returns 400 when targetAIInstanceId does not match an AI instance", async () => {
+    const request = new Request("http://localhost", {
+      method: "POST",
+      body: JSON.stringify({
+        latestUserMessage: "Hello",
+        aiInstances: [
+          { id: "ai-1", name: "Skeptic", instructions: "Focus on risks." },
+        ],
+        recentMessages: [{ id: "msg-1", authorType: "user", content: "Hi" }],
+        targetAIInstanceId: "missing",
+      }),
+    });
+
+    const response = await POST(request);
+    expect(response.status).toBe(400);
+  });
+
   it("returns 400 when recentMessages is not an array", async () => {
     const request = new Request("http://localhost", {
       method: "POST",
@@ -149,6 +166,7 @@ describe("POST /api/chat-room/respond", () => {
         recentMessages: [
           { id: "msg-0", authorType: "user", content: "Should we launch?" },
         ],
+        targetAIInstanceId: "ai-1",
       }),
     });
 

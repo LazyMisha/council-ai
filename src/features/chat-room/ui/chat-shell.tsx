@@ -13,6 +13,8 @@ export function ChatShell() {
   const controller = useChatRoomController();
   const { containerRef, showScrollButton, scrollToBottom } = useAutoScroll([
     controller.activeRoom?.messages.length ?? 0,
+    controller.activePendingAIStatus?.phase ?? "",
+    controller.activePendingAIStatus?.roleName ?? "",
   ]);
 
   return (
@@ -26,7 +28,7 @@ export function ChatShell() {
             <MessageList
               activeRoom={controller.activeRoom}
               containerRef={containerRef}
-              isThinking={controller.isThinking}
+              pendingAIStatus={controller.activePendingAIStatus}
               scrollToBottom={scrollToBottom}
               showScrollButton={showScrollButton}
             />

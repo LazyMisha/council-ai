@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   isFinishRequestBody,
   isRespondRequestBody,
+  isSelectSpeakerRequestBody,
   isSummarizeRequestBody,
 } from "./contracts";
 
@@ -38,6 +39,28 @@ describe("chat-room API contracts", () => {
     ).toBe(true);
   });
 
+  it("allows respond requests with a valid target AI instance", () => {
+    expect(
+      isRespondRequestBody({
+        latestUserMessage: "Should we launch?",
+        aiInstances: [aiInstance],
+        recentMessages: [userMessage],
+        targetAIInstanceId: "ai-1",
+      }),
+    ).toBe(true);
+  });
+
+  it("rejects respond requests with an unknown target AI instance", () => {
+    expect(
+      isRespondRequestBody({
+        latestUserMessage: "Should we launch?",
+        aiInstances: [aiInstance],
+        recentMessages: [userMessage],
+        targetAIInstanceId: "missing",
+      }),
+    ).toBe(false);
+  });
+
   it("rejects reply respond requests missing latestUserMessage", () => {
     expect(
       isRespondRequestBody({
@@ -59,6 +82,15 @@ describe("chat-room API contracts", () => {
   it("validates summarize requests with message history", () => {
     expect(
       isSummarizeRequestBody({
+        recentMessages: [userMessage],
+      }),
+    ).toBe(true);
+  });
+
+  it("validates select-speaker requests with AI instances and history", () => {
+    expect(
+      isSelectSpeakerRequestBody({
+        aiInstances: [aiInstance],
         recentMessages: [userMessage],
       }),
     ).toBe(true);

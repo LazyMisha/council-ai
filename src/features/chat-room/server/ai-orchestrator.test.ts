@@ -106,12 +106,14 @@ describe("generateAIResponses", () => {
     expect(result.messages[0].content).not.toContain("Legal Reviewer:");
   });
 
-  it("generates real AI responses in the active AI instance order", async () => {
+  it("selects one AI instance for a normal user message", async () => {
     process.env.OPENAI_API_KEY = "test-key";
     openAIResponsesCreate
-      .mockResolvedValueOnce({ output_text: "Architect response." })
-      .mockResolvedValueOnce({ output_text: "Analyst response." })
-      .mockResolvedValueOnce({ output_text: "Skeptic response." });
+      .mockResolvedValueOnce({
+        output_text:
+          '{"aiInstanceId": "analyst", "reason": "Value angle is missing"}',
+      })
+      .mockResolvedValueOnce({ output_text: "Analyst response." });
 
     const orderedInstances: AIInstance[] = [
       {
@@ -137,26 +139,18 @@ describe("generateAIResponses", () => {
       recentMessages,
     });
 
-    expect(result.messages.map((message) => message.role)).toEqual([
-      "Software Architect",
-      "Business Analyst",
-      "Skeptic",
-    ]);
-    expect(result.messages.map((message) => message.content)).toEqual([
-      "Architect response.",
-      "Analyst response.",
-      "Skeptic response.",
-    ]);
+    expect(result.messages).toHaveLength(1);
+    expect(result.messages[0].role).toBe("Business Analyst");
+    expect(result.messages[0].content).toBe("Analyst response.");
   });
 
-  it("passes previous AI responses from the same round to later AI instances", async () => {
+  it("uses targetAIInstanceId to generate one selected AI response", async () => {
     process.env.OPENAI_API_KEY = "test-key";
-    openAIResponsesCreate
-      .mockResolvedValueOnce({ output_text: "Architect says start small." })
-      .mockResolvedValueOnce({ output_text: "Analyst adds success metrics." })
-      .mockResolvedValueOnce({ output_text: "Skeptic checks approval risk." });
+    openAIResponsesCreate.mockResolvedValueOnce({
+      output_text: "Skeptic checks approval risk.",
+    });
 
-    await generateAIResponses({
+    const result = await generateAIResponses({
       latestUserMessage: "Should we launch?",
       aiInstances: [
         {
@@ -176,42 +170,22 @@ describe("generateAIResponses", () => {
         },
       ],
       recentMessages,
+      targetAIInstanceId: "skeptic",
     });
 
-    const firstInput = openAIResponsesCreate.mock.calls[0][0].input as string;
-    const secondInput = openAIResponsesCreate.mock.calls[1][0].input as string;
-    const thirdInput = openAIResponsesCreate.mock.calls[2][0].input as string;
-
-    expect(firstInput).not.toContain("Architect says start small.");
-    expect(secondInput).toContain(
-      "Software Architect: Architect says start small.",
-    );
-    expect(secondInput).not.toContain("Analyst adds success metrics.");
-    expect(thirdInput).toContain(
-      "Software Architect: Architect says start small.",
-    );
-    expect(thirdInput).toContain(
-      "Business Analyst: Analyst adds success metrics.",
-    );
+    expect(openAIResponsesCreate).toHaveBeenCalledTimes(1);
+    expect(result.messages).toHaveLength(1);
+    expect(result.messages[0].role).toBe("Skeptic");
+    expect(result.messages[0].content).toBe("Skeptic checks approval risk.");
   });
 
-  it("waits for each response before generating the next AI response", async () => {
+  it("skips selector when targetAIInstanceId is provided", async () => {
     process.env.OPENAI_API_KEY = "test-key";
-
-    let activeCalls = 0;
-    let maxActiveCalls = 0;
-
-    openAIResponsesCreate.mockImplementation(async () => {
-      activeCalls += 1;
-      maxActiveCalls = Math.max(maxActiveCalls, activeCalls);
-
-      await Promise.resolve();
-
-      activeCalls -= 1;
-      return { output_text: `Response ${openAIResponsesCreate.mock.calls.length}` };
+    openAIResponsesCreate.mockResolvedValue({
+      output_text: "Architect responds directly.",
     });
 
-    await generateAIResponses({
+    const result = await generateAIResponses({
       latestUserMessage: "Should we launch?",
       aiInstances: [
         {
@@ -231,10 +205,11 @@ describe("generateAIResponses", () => {
         },
       ],
       recentMessages,
+      targetAIInstanceId: "architect",
     });
 
-    expect(openAIResponsesCreate).toHaveBeenCalledTimes(3);
-    expect(maxActiveCalls).toBe(1);
+    expect(openAIResponsesCreate).toHaveBeenCalledTimes(1);
+    expect(result.messages[0].role).toBe("Software Architect");
   });
 
   it("continues discussion from existing context without a new user message", async () => {
@@ -350,11 +325,13 @@ describe("generateAIResponses", () => {
     expect(openAIResponsesCreate).not.toHaveBeenCalled();
   });
 
-  it("normal user message flow still uses fixed-order round", async () => {
+  it("normal user message flow uses smart speaker selection", async () => {
     process.env.OPENAI_API_KEY = "test-key";
     openAIResponsesCreate
-      .mockResolvedValueOnce({ output_text: "Architect says start small." })
-      .mockResolvedValueOnce({ output_text: "Analyst adds success metrics." })
+      .mockResolvedValueOnce({
+        output_text:
+          '{"aiInstanceId": "skeptic", "reason": "Risk check needed"}',
+      })
       .mockResolvedValueOnce({ output_text: "Skeptic checks approval risk." });
 
     const multiInstances: AIInstance[] = [
@@ -382,12 +359,8 @@ describe("generateAIResponses", () => {
       recentMessages,
     });
 
-    expect(result.messages).toHaveLength(3);
-    expect(result.messages.map((m) => m.role)).toEqual([
-      "Software Architect",
-      "Business Analyst",
-      "Skeptic",
-    ]);
+    expect(result.messages).toHaveLength(1);
+    expect(result.messages[0].role).toBe("Skeptic");
   });
 
   it("selected AI instance receives full chat history", async () => {

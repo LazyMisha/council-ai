@@ -6,9 +6,15 @@ export type RespondRequestBody = {
   aiInstances: AIInstance[];
   recentMessages: Message[];
   mode?: DiscussionMode;
+  targetAIInstanceId?: string;
 };
 
 export type FinishRequestBody = {
+  aiInstances: AIInstance[];
+  recentMessages: Message[];
+};
+
+export type SelectSpeakerRequestBody = {
   aiInstances: AIInstance[];
   recentMessages: Message[];
 };
@@ -27,6 +33,19 @@ export function isRespondRequestBody(
   return (
     isDiscussionMode(body.mode) &&
     isValidLatestUserMessage(body) &&
+    isValidTargetAIInstanceId(body) &&
+    Array.isArray(body.aiInstances) &&
+    body.aiInstances.every(isAIInstance) &&
+    Array.isArray(body.recentMessages) &&
+    body.recentMessages.every(isMessage)
+  );
+}
+
+export function isSelectSpeakerRequestBody(
+  body: unknown,
+): body is SelectSpeakerRequestBody {
+  return (
+    isRecord(body) &&
     Array.isArray(body.aiInstances) &&
     body.aiInstances.every(isAIInstance) &&
     Array.isArray(body.recentMessages) &&
@@ -67,6 +86,24 @@ function isValidLatestUserMessage(body: Record<string, unknown>) {
   return (
     typeof body.latestUserMessage === "string" &&
     body.latestUserMessage.trim().length > 0
+  );
+}
+
+function isValidTargetAIInstanceId(body: Record<string, unknown>) {
+  if (body.targetAIInstanceId === undefined) {
+    return true;
+  }
+
+  if (
+    typeof body.targetAIInstanceId !== "string" ||
+    !Array.isArray(body.aiInstances)
+  ) {
+    return false;
+  }
+
+  return body.aiInstances.some(
+    (instance) =>
+      isAIInstance(instance) && instance.id === body.targetAIInstanceId,
   );
 }
 

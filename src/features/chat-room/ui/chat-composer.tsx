@@ -34,27 +34,23 @@ export function ChatComposer({ controller }: ChatComposerProps) {
         {controller.hasAIDiscussionRound ? (
           <div className="mb-3 flex flex-wrap gap-2">
             {controller.isAutoDiscussing ? (
-              <Button
-                variant="dangerSubtle"
-                size="sm"
-                onClick={controller.stopAutoDiscuss}
-              >
-                Stop
-              </Button>
-            ) : (
               <>
                 <Button
-                  variant="secondary"
+                  variant="dangerSubtle"
                   size="sm"
-                  onClick={controller.continueDiscussion}
-                  disabled={
-                    controller.isAutoDiscussing ||
-                    controller.isThinking ||
-                    activeRoom.aiInstances.length === 0
-                  }
+                  onClick={controller.stopAutoDiscuss}
+                  disabled={controller.isStoppingAutoDiscuss}
                 >
-                  Continue discussion
+                  {controller.isStoppingAutoDiscuss ? "Stopping..." : "Stop"}
                 </Button>
+                {controller.isStoppingAutoDiscuss ? (
+                  <p className="self-center text-sm text-text-tertiary">
+                    Stopping after this response...
+                  </p>
+                ) : null}
+              </>
+            ) : (
+              <>
                 <Button
                   variant="secondary"
                   size="sm"

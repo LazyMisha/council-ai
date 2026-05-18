@@ -1,5 +1,6 @@
 import type { FinishDecision } from "../server/finish-detector";
 import type { DiscussionMode } from "../server/role-prompts";
+import type { SpeakerSelection } from "../server/speaker-selector";
 import type { AIInstance, Message } from "../domain/types";
 
 type RespondInput = {
@@ -7,6 +8,7 @@ type RespondInput = {
   aiInstances: AIInstance[];
   recentMessages: Message[];
   mode: DiscussionMode;
+  targetAIInstanceId?: string;
 };
 
 export async function requestAIResponses(input: RespondInput) {
@@ -24,6 +26,31 @@ export async function requestAIResponses(input: RespondInput) {
 
   const data = (await response.json()) as { messages?: Message[] };
   return data.messages ?? [];
+}
+
+export async function requestSpeakerSelection({
+  aiInstances,
+  recentMessages,
+}: {
+  aiInstances: AIInstance[];
+  recentMessages: Message[];
+}) {
+  const response = await fetch("/api/chat-room/select-speaker", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      aiInstances,
+      recentMessages,
+    }),
+  });
+
+  if (!response.ok) {
+    return null;
+  }
+
+  return (await response.json()) as SpeakerSelection;
 }
 
 export async function requestFinishDecision({

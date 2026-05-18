@@ -1,9 +1,14 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { afterEach, vi } from "vitest";
 import { ChatShell } from "./chat-shell";
 
 describe("ChatShell", () => {
   beforeEach(() => {
     window.localStorage.clear();
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
   });
 
   const createRoomFromEmptyState = () => {
@@ -48,6 +53,108 @@ describe("ChatShell", () => {
 
     expect(screen.getByText("Send")).toBeInTheDocument();
     expect(screen.getByText("+ Add AI")).toBeInTheDocument();
+  });
+
+  it("shows speaker selection and role-specific thinking states", async () => {
+    const room = {
+      id: "room-1",
+      title: "Test Room",
+      aiInstances: [
+        {
+          id: "architect",
+          name: "Software Architect",
+          instructions: "Focus on technical feasibility.",
+        },
+        { id: "skeptic", name: "Skeptic", instructions: "Focus on risks." },
+      ],
+      messages: [],
+      canSummarize: false,
+    };
+    const selection = createDeferred<Response>();
+    const response = createDeferred<Response>();
+
+    window.localStorage.setItem(
+      "council-ai-chat-rooms",
+      JSON.stringify({
+        chatRooms: [room],
+        activeRoomId: "room-1",
+      }),
+    );
+
+    vi.spyOn(global, "fetch").mockImplementation(async (url) => {
+      if (typeof url !== "string") return { ok: false } as Response;
+
+      if (url.includes("/api/chat-room/select-speaker")) {
+        return selection.promise;
+      }
+
+      if (url.includes("/api/chat-room/respond")) {
+        return response.promise;
+      }
+
+      if (url.includes("/api/chat-room/finish")) {
+        return {
+          ok: true,
+          json: async () => ({ status: "continue_discussion" }),
+        } as Response;
+      }
+
+      return { ok: false } as Response;
+    });
+
+    render(<ChatShell />);
+
+    await waitFor(() => {
+      expect(
+        screen.getByPlaceholderText("Start a topic or reply..."),
+      ).toBeInTheDocument();
+    });
+
+    fireEvent.change(screen.getByLabelText("Start a topic or reply"), {
+      target: { value: "Should we launch?" },
+    });
+    fireEvent.click(screen.getByText("Send"));
+
+    expect(
+      screen.getByText("Choosing who should answer next..."),
+    ).toBeInTheDocument();
+
+    selection.resolve({
+      ok: true,
+      json: async () => ({
+        aiInstanceId: "architect",
+        reason: "Architecture risk first.",
+      }),
+    } as Response);
+
+    await waitFor(() => {
+      expect(
+        screen.getByText("Software Architect is thinking..."),
+      ).toBeInTheDocument();
+    });
+
+    response.resolve({
+      ok: true,
+      json: async () => ({
+        messages: [
+          {
+            id: "ai-response",
+            authorType: "ai",
+            role: "Software Architect",
+            content: "Start with the integration boundary.",
+          },
+        ],
+      }),
+    } as Response);
+
+    await waitFor(() => {
+      expect(
+        screen.getByText("Start with the integration boundary."),
+      ).toBeInTheDocument();
+    });
+    expect(
+      screen.queryByText("AI instances are thinking..."),
+    ).not.toBeInTheDocument();
   });
 
   it("shows predefined AI roles after creating a room", () => {
@@ -135,7 +242,7 @@ describe("ChatShell", () => {
     });
   });
 
-  it("shows Continue discussion after a summary exists", async () => {
+  it("does not show Continue discussion after a summary exists", async () => {
     const roomWithSummary = {
       id: "room-1",
       title: "Test Room",
@@ -166,7 +273,8 @@ describe("ChatShell", () => {
     render(<ChatShell />);
 
     await waitFor(() => {
-      expect(screen.getByText("Continue discussion")).toBeInTheDocument();
+      expect(screen.queryByText("Continue discussion")).not.toBeInTheDocument();
+      expect(screen.getByText("Auto-discuss")).toBeInTheDocument();
     });
   });
 
@@ -241,3 +349,12 @@ describe("ChatShell", () => {
     });
   });
 });
+
+function createDeferred<T>() {
+  let resolve!: (value: T) => void;
+  const promise = new Promise<T>((res) => {
+    resolve = res;
+  });
+
+  return { promise, resolve };
+}

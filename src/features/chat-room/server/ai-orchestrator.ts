@@ -11,6 +11,7 @@ type GenerateAIResponsesInput = {
   aiInstances: AIInstance[];
   recentMessages: Message[];
   mode?: DiscussionMode;
+  targetAIInstanceId?: string;
 };
 
 type GenerateAIResponsesResult = {
@@ -22,6 +23,7 @@ export async function generateAIResponses({
   aiInstances,
   recentMessages,
   mode = "reply",
+  targetAIInstanceId,
 }: GenerateAIResponsesInput): Promise<GenerateAIResponsesResult> {
   const roundId = createRoundId(mode, latestUserMessage);
 
@@ -35,9 +37,12 @@ export async function generateAIResponses({
     });
   }
 
-  let instancesToRespond = aiInstances;
+  let instancesToRespond = selectTargetInstances(
+    aiInstances,
+    targetAIInstanceId,
+  );
 
-  if (mode === "continue" && aiInstances.length > 1) {
+  if (!targetAIInstanceId && aiInstances.length > 1) {
     const selection = await selectSpeaker({ aiInstances, recentMessages });
     const selected = aiInstances.find(
       (instance) => instance.id === selection.aiInstanceId,
@@ -105,6 +110,21 @@ export async function generateAIResponses({
       }),
     );
   }
+}
+
+function selectTargetInstances(
+  aiInstances: AIInstance[],
+  targetAIInstanceId?: string,
+) {
+  if (!targetAIInstanceId) {
+    return aiInstances;
+  }
+
+  const selected = aiInstances.find(
+    (instance) => instance.id === targetAIInstanceId,
+  );
+
+  return selected ? [selected] : [aiInstances[0]];
 }
 
 function cleanMockMessages(result: { messages: Message[] }): {

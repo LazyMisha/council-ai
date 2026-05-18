@@ -10,6 +10,12 @@ import { selectActiveChatRoom } from "../domain/state";
 import type { AIInstance } from "../domain/types";
 
 export type RolePickerTab = "predefined" | "custom";
+export type PendingAIStatus = {
+  roomId: string;
+  phase: "selecting" | "responding" | "summarizing";
+  aiInstanceId?: string;
+  roleName?: string;
+};
 
 export function useChatRoomState() {
   const [chatRooms, setChatRooms] = useState(defaultStorageState.chatRooms);
@@ -18,7 +24,9 @@ export function useChatRoomState() {
   );
   const [draft, setDraft] = useState("");
   const [isRolePickerOpen, setIsRolePickerOpen] = useState(false);
-  const [thinkingRoomIds, setThinkingRoomIds] = useState<string[]>([]);
+  const [pendingAIStatuses, setPendingAIStatuses] = useState<
+    PendingAIStatus[]
+  >([]);
   const [customName, setCustomName] = useState("");
   const [customInstructions, setCustomInstructions] = useState("");
   const [customDescription, setCustomDescription] = useState("");
@@ -48,6 +56,9 @@ export function useChatRoomState() {
   const [autoDiscussingRoomIds, setAutoDiscussingRoomIds] = useState<string[]>(
     [],
   );
+  const [stoppingAutoDiscussRoomIds, setStoppingAutoDiscussRoomIds] = useState<
+    string[]
+  >([]);
   const stoppingAutoDiscussRef = useRef<Set<string>>(new Set());
 
   useEffect(() => {
@@ -78,16 +89,23 @@ export function useChatRoomState() {
     () => selectActiveChatRoom(chatRooms, activeRoomId),
     [activeRoomId, chatRooms],
   );
+  const activePendingAIStatus = activeRoom
+    ? pendingAIStatuses.find((status) => status.roomId === activeRoom.id) ??
+      null
+    : null;
 
   const activeNames = activeRoom
     ? activeRoom.aiInstances.map((instance) => instance.name)
     : [];
   const isThinking = activeRoom
-    ? thinkingRoomIds.includes(activeRoom.id) ||
+    ? Boolean(activePendingAIStatus) ||
       autoDiscussingRoomIds.includes(activeRoom.id)
     : false;
   const isAutoDiscussing = activeRoom
     ? autoDiscussingRoomIds.includes(activeRoom.id)
+    : false;
+  const isStoppingAutoDiscuss = activeRoom
+    ? stoppingAutoDiscussRoomIds.includes(activeRoom.id)
     : false;
   const hasSummary = activeRoom
     ? activeRoom.messages.some((message) => message.authorType === "summary")
@@ -118,15 +136,17 @@ export function useChatRoomState() {
     setConfirmingClear(false);
   };
 
-  const addThinkingRoom = (roomId: string) => {
-    setThinkingRoomIds((roomIds) => [...roomIds, roomId]);
+  const setPendingAIStatus = (status: PendingAIStatus) => {
+    setPendingAIStatuses((statuses) => [
+      ...statuses.filter((item) => item.roomId !== status.roomId),
+      status,
+    ]);
   };
 
-  const removeThinkingRoom = (roomId: string) => {
-    setThinkingRoomIds((roomIds) => {
-      const roomIndex = roomIds.indexOf(roomId);
-      return roomIds.filter((_, index) => index !== roomIndex);
-    });
+  const clearPendingAIStatus = (roomId: string) => {
+    setPendingAIStatuses((statuses) =>
+      statuses.filter((status) => status.roomId !== roomId),
+    );
   };
 
   return {
@@ -134,9 +154,10 @@ export function useChatRoomState() {
     activeRoom,
     activeRoomId,
     activeTab,
-    addThinkingRoom,
+    activePendingAIStatus,
     autoDiscussingRoomIds,
     chatRooms,
+    clearPendingAIStatus,
     closeRolePicker,
     closeRoomMenu,
     confirmingClear,
@@ -157,9 +178,9 @@ export function useChatRoomState() {
     isRenaming,
     isRolePickerOpen,
     isRoomMenuOpen,
+    isStoppingAutoDiscuss,
     isThinking,
     openMenuInstanceId,
-    removeThinkingRoom,
     renameError,
     renameValue,
     resetCustomForm,
@@ -183,8 +204,10 @@ export function useChatRoomState() {
     setIsRolePickerOpen,
     setIsRoomMenuOpen,
     setOpenMenuInstanceId,
+    setPendingAIStatus,
     setRenameError,
     setRenameValue,
+    setStoppingAutoDiscussRoomIds,
     setViewingInstance,
     stoppingAutoDiscussRef,
     viewingInstance,

@@ -225,6 +225,11 @@ describe("Auto-discuss", () => {
 
     fireEvent.click(screen.getByText("Stop"));
 
+    expect(screen.getByText("Stopping...")).toBeDisabled();
+    expect(
+      screen.getByText("Stopping after this response..."),
+    ).toBeInTheDocument();
+
     await waitFor(() => {
       expect(screen.getByText("Auto-discuss")).toBeInTheDocument();
     });
@@ -309,7 +314,7 @@ describe("Auto-discuss", () => {
     15000,
   );
 
-  it("disables Continue discussion and Send while auto-discussing", async () => {
+  it("hides Continue discussion and disables Send while auto-discussing", async () => {
     setupRoomWithDiscussion();
 
     vi.spyOn(global, "fetch").mockImplementation(async (url) => {

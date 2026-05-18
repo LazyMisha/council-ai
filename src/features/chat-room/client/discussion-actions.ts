@@ -9,6 +9,7 @@ import type { AIInstance, Message } from "../domain/types";
 import {
   requestAIResponses,
   requestFinishDecision,
+  requestSpeakerSelection,
   requestSummary,
 } from "./api";
 import type { ChatRoomState } from "./use-chat-room-state";
@@ -33,15 +34,21 @@ export function createDiscussionActions(state: ChatRoomState) {
       return;
     }
 
-    state.addThinkingRoom(roomId);
-
     try {
+      const selectedInstance = await selectNextAIInstance({
+        roomId,
+        aiInstances,
+        recentMessages,
+        state,
+      });
+
       const [responseMessages] = await Promise.all([
         requestAIResponses({
           mode: "reply",
           latestUserMessage: content,
           aiInstances,
           recentMessages,
+          targetAIInstanceId: selectedInstance.id,
         }),
         wait(700),
       ]);
@@ -58,48 +65,7 @@ export function createDiscussionActions(state: ChatRoomState) {
         ...responseMessages,
       ]);
     } finally {
-      state.removeThinkingRoom(roomId);
-    }
-  };
-
-  const continueDiscussion = async () => {
-    if (
-      !state.activeRoom ||
-      state.activeRoom.aiInstances.length === 0 ||
-      state.isThinking
-    ) {
-      return;
-    }
-
-    const roomId = state.activeRoom.id;
-    const aiInstances = state.activeRoom.aiInstances;
-    const recentMessages = state.activeRoom.messages;
-
-    state.addThinkingRoom(roomId);
-
-    try {
-      const [responseMessages] = await Promise.all([
-        requestAIResponses({
-          mode: "continue",
-          aiInstances,
-          recentMessages,
-        }),
-        wait(700),
-      ]);
-
-      if (responseMessages.length === 0) {
-        return;
-      }
-
-      state.setChatRooms((rooms) =>
-        appendMessages(rooms, roomId, responseMessages),
-      );
-      void fetchFinishDecision(roomId, aiInstances, [
-        ...recentMessages,
-        ...responseMessages,
-      ]);
-    } finally {
-      state.removeThinkingRoom(roomId);
+      state.clearPendingAIStatus(roomId);
     }
   };
 
@@ -136,9 +102,12 @@ export function createDiscussionActions(state: ChatRoomState) {
     const roomId = state.activeRoom.id;
     const recentMessages = state.activeRoom.messages;
 
-    state.addThinkingRoom(roomId);
-
     try {
+      state.setPendingAIStatus({
+        roomId,
+        phase: "summarizing",
+      });
+
       const [summaryMessage] = await Promise.all([
         requestSummary(recentMessages),
         wait(700),
@@ -155,7 +124,7 @@ export function createDiscussionActions(state: ChatRoomState) {
         ),
       );
     } finally {
-      state.removeThinkingRoom(roomId);
+      state.clearPendingAIStatus(roomId);
     }
   };
 
@@ -182,11 +151,23 @@ export function createDiscussionActions(state: ChatRoomState) {
           break;
         }
 
+        const selectedInstance = await selectNextAIInstance({
+          roomId,
+          aiInstances,
+          recentMessages: currentMessages,
+          state,
+        });
+
+        if (state.stoppingAutoDiscussRef.current.has(roomId)) {
+          break;
+        }
+
         const [responseMessages] = await Promise.all([
           requestAIResponses({
             mode: "continue",
             aiInstances,
             recentMessages: currentMessages,
+            targetAIInstanceId: selectedInstance.id,
           }),
           wait(700),
         ]);
@@ -213,22 +194,77 @@ export function createDiscussionActions(state: ChatRoomState) {
       state.setAutoDiscussingRoomIds((ids) =>
         ids.filter((id) => id !== roomId),
       );
+      state.clearPendingAIStatus(roomId);
+      state.setStoppingAutoDiscussRoomIds((ids) =>
+        ids.filter((id) => id !== roomId),
+      );
       state.stoppingAutoDiscussRef.current.delete(roomId);
     }
   };
 
   const stopAutoDiscuss = () => {
     if (!state.activeRoom) return;
-    state.stoppingAutoDiscussRef.current.add(state.activeRoom.id);
+    const roomId = state.activeRoom.id;
+
+    state.stoppingAutoDiscussRef.current.add(roomId);
+    state.setStoppingAutoDiscussRoomIds((ids) =>
+      ids.includes(roomId) ? ids : [...ids, roomId],
+    );
   };
 
   return {
     autoDiscuss,
-    continueDiscussion,
     sendMessage,
     stopAutoDiscuss,
     summarizeDiscussion,
   };
+}
+
+async function selectNextAIInstance({
+  roomId,
+  aiInstances,
+  recentMessages,
+  state,
+}: {
+  roomId: string;
+  aiInstances: AIInstance[];
+  recentMessages: Message[];
+  state: ChatRoomState;
+}) {
+  if (aiInstances.length === 1) {
+    const [selectedInstance] = aiInstances;
+
+    state.setPendingAIStatus({
+      roomId,
+      phase: "responding",
+      aiInstanceId: selectedInstance.id,
+      roleName: selectedInstance.name,
+    });
+
+    return selectedInstance;
+  }
+
+  state.setPendingAIStatus({
+    roomId,
+    phase: "selecting",
+  });
+
+  const selection = await requestSpeakerSelection({
+    aiInstances,
+    recentMessages,
+  });
+  const selectedInstance =
+    aiInstances.find((instance) => instance.id === selection?.aiInstanceId) ??
+    aiInstances[0];
+
+  state.setPendingAIStatus({
+    roomId,
+    phase: "responding",
+    aiInstanceId: selectedInstance.id,
+    roleName: selectedInstance.name,
+  });
+
+  return selectedInstance;
 }
 
 function wait(duration: number) {

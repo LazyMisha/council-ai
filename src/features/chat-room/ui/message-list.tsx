@@ -1,12 +1,14 @@
 import type { RefObject } from "react";
+import { getRoleAccent } from "../domain/role-colors";
 import type { ChatRoom } from "../domain/types";
+import type { PendingAIStatus } from "../client/use-chat-room-state";
 import { MessageBubble } from "./message-bubble";
 import { SummaryMessage } from "./summary-message";
 
 type MessageListProps = {
   activeRoom: ChatRoom;
   containerRef: RefObject<HTMLDivElement | null>;
-  isThinking: boolean;
+  pendingAIStatus: PendingAIStatus | null;
   scrollToBottom: () => void;
   showScrollButton: boolean;
 };
@@ -14,7 +16,7 @@ type MessageListProps = {
 export function MessageList({
   activeRoom,
   containerRef,
-  isThinking,
+  pendingAIStatus,
   scrollToBottom,
   showScrollButton,
 }: MessageListProps) {
@@ -49,10 +51,8 @@ export function MessageList({
             return <MessageBubble key={message.id} message={message} />;
           })}
 
-          {isThinking ? (
-            <p className="text-sm text-text-tertiary">
-              AI instances are thinking...
-            </p>
+          {pendingAIStatus ? (
+            <PendingIndicator pendingAIStatus={pendingAIStatus} />
           ) : null}
 
           {showScrollButton ? (
@@ -80,4 +80,38 @@ export function MessageList({
       </div>
     </div>
   );
+}
+
+function PendingIndicator({
+  pendingAIStatus,
+}: {
+  pendingAIStatus: PendingAIStatus;
+}) {
+  const roleName = pendingAIStatus.roleName;
+  const accent = roleName ? getRoleAccent(roleName) : null;
+  const label = getPendingLabel(pendingAIStatus);
+
+  return (
+    <p className="flex items-center gap-2 text-sm text-text-tertiary">
+      {accent ? (
+        <span
+          className="h-1.5 w-1.5 rounded-full"
+          style={{ backgroundColor: accent.dot }}
+        />
+      ) : null}
+      <span>{label}</span>
+    </p>
+  );
+}
+
+function getPendingLabel(pendingAIStatus: PendingAIStatus) {
+  if (pendingAIStatus.phase === "selecting") {
+    return "Choosing who should answer next...";
+  }
+
+  if (pendingAIStatus.phase === "summarizing") {
+    return "Creating summary...";
+  }
+
+  return `${pendingAIStatus.roleName ?? "Selected AI instance"} is thinking...`;
 }

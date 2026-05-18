@@ -10,19 +10,17 @@ The first real implementation should be manual:
 
 1. User starts a topic or replies in a chat room.
 2. User sends the message.
-3. Client sends recent messages and selected AI instances to the route.
-4. Server processes AI instances in the chat room's current order.
-5. Each AI instance receives the recent conversation plus any AI responses already generated in the current round.
-6. AI instances respond once each, in role, until one full fixed-order round is complete.
-7. Client appends returned role responses as messages.
-8. User can click Continue discussion to advance the discussion without sending a new user message. An internal smart speaker selector chooses exactly one AI instance to speak next. The selected instance receives the full chat history and responds in role.
+3. Client shows that CouncilAI is choosing who should answer next.
+4. An internal smart speaker selector chooses exactly one AI instance.
+5. Client shows the selected role-specific thinking indicator.
+6. Server generates one response from the selected AI instance.
+7. Client appends the returned role response as a message.
+8. User can click Auto-discuss to advance the discussion without sending a new user message.
 9. User can click Summarize to append one internal moderator summary message.
 
 ## Speaker Selection
 
-When the user sends a normal message, the existing fixed-order round still runs: all AI instances respond once each in their defined order.
-
-When the user clicks Continue discussion, a smart speaker selector picks the next AI instance. The selector is invisible: it does not appear in the AI role bar and does not create a visible message. It returns structured data like `{ "aiInstanceId": "...", "reason": "..." }`.
+When the user sends a normal message or Auto-discuss advances a turn, a smart speaker selector picks the next AI instance. The selector is invisible: it does not appear in the AI role bar and does not create a visible message. It returns structured data like `{ "aiInstanceId": "...", "reason": "..." }`.
 
 The selector considers which AI instance can add the most value now, who has not spoken recently, who can address unresolved disagreement, who can challenge weak assumptions, and who can move the discussion toward a useful conclusion. It avoids selecting an AI instance that would likely repeat previous points. It also avoids selecting the same AI instance that spoke last when another AI instance can contribute.
 
@@ -99,17 +97,17 @@ If `OPENAI_API_KEY` is missing or the detector fails, a deterministic fallback i
 - Prefer `continue_discussion` when fewer than 3 AI messages exist.
 - Prefer `ready_to_summarize` when 3 or more AI messages exist.
 
-The finish detector runs after each AI discussion round. When it decides the discussion is ready to summarize, it sets the room's `canSummarize` flag to `true`. Once this flag is set, it stays `true` for that room's lifetime — it is not reset by new user messages or additional Continue discussion rounds. The Summarize button is shown whenever `canSummarize` is `true` and AI messages exist in the room.
+The finish detector runs after each AI response. When it decides the discussion is ready to summarize, it sets the room's `canSummarize` flag to `true`. Once this flag is set, it stays `true` for that room's lifetime — it is not reset by new user messages or additional Auto-discuss turns. The Summarize button is shown whenever `canSummarize` is `true` and AI messages exist in the room.
 
 The `canSummarize` flag is persisted in `localStorage` as part of the chat room state. It is reset only when:
 - the room's messages are cleared
 - the room is deleted
 
-When the finish detector returns anything other than `ready_to_summarize`, no status text is shown. Continue discussion remains available at all times after an AI discussion round exists.
+When the finish detector returns anything other than `ready_to_summarize`, no status text is shown. Auto-discuss remains available at all times after an AI response exists.
 
 ## Auto-Discussion Mode
 
-An optional Auto-discuss action lets the user run multiple Continue discussion turns automatically.
+An optional Auto-discuss action lets the user run multiple selected-speaker turns automatically.
 
 Behavior:
 - Shown after the first AI discussion round exists.
@@ -123,7 +121,7 @@ Behavior:
 
 The Stop button appears while auto-discussion is running and prevents future turns from starting. In-flight requests may still complete.
 
-Continue discussion is disabled while auto-discussion is running. Send is disabled while auto-discussion is running. Summarize remains available if it becomes available during auto-discussion. The existing thinking indicator shows during auto-discussion.
+Send is disabled while auto-discussion is running. Summarize remains available if it becomes available during auto-discussion. The pending indicator shows either speaker selection or the selected AI instance thinking. When Stop is clicked, the Stop button changes to `Stopping...` until the current in-flight turn finishes.
 
 ## Future Improvements
 

@@ -12,6 +12,7 @@ Review UI changes for the simplified MVP chat direction.
 ## Check
 
 - Minimal chat layout.
+- Anthropic-inspired neutral palette and typography, without logos or direct brand claims.
 - Clean left sidebar with CouncilAI, `+ New chat room`, and recent chat rooms.
 - Simple message area with user messages right and AI role messages left.
 - Clear AI instances area with role chips and `+ Add AI instance`.
@@ -27,4 +28,5 @@ Review UI changes for the simplified MVP chat direction.
 - Long marketing pages.
 - Roadmap sections in the UI.
 - Excessive cards or explanatory sections.
+- Direct Anthropic branding, logos, or affiliation claims.
 - Generic chatbot UI that hides multiple AI roles.

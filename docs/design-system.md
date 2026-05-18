@@ -1,6 +1,6 @@
 # Design System
 
-CouncilAI should feel calm, minimal, and decision-focused. Use Claude/ChatGPT-style simplicity as layout inspiration, with a warm restrained palette from this project. Do not copy any product branding directly.
+CouncilAI should feel calm, minimal, and decision-focused. Use Claude/ChatGPT-style simplicity as layout inspiration, with an Anthropic-inspired neutral palette and typography. CouncilAI remains its own product: do not use Anthropic logos, names, or affiliation claims.
 
 ## Principles
 
@@ -8,7 +8,7 @@ CouncilAI should feel calm, minimal, and decision-focused. Use Claude/ChatGPT-st
 - Minimal text.
 - Lots of empty space.
 - Few components.
-- Warm neutral surfaces.
+- Anthropic-inspired warm neutral surfaces.
 - Clear AI instance labels.
 - Synthesis should feel useful, not loud.
 
@@ -25,22 +25,25 @@ Avoid dashboards, roadmap sections, long landing pages, large marketing blocks, 
 
 ## Color Tokens
 
-- `background`: warm off-white.
-- `surface`: near-white.
-- `surface-muted`: warm gray.
-- `text-primary`: warm near-black.
-- `text-secondary`: muted gray-brown.
-- `text-tertiary`: low-emphasis gray.
-- `border-subtle`: light warm gray.
-- `border-strong`: medium warm gray.
-- `accent`: muted clay/rust/olive for primary actions.
-- `accent-muted`: pale accent for summaries or highlights.
+- `background`: `#faf9f5`, warm light base.
+- `surface`: near-white for panels and message bubbles.
+- `surface-muted`: `#e8e6dc`, subtle warm gray.
+- `text-primary`: `#141413`, warm near-black.
+- `text-secondary`: muted warm gray for supporting text.
+- `text-tertiary`: lower-emphasis warm gray.
+- `border-subtle`: `#e8e6dc`, light warm gray.
+- `border-strong`: `#b0aea5`, medium warm gray.
+- `accent`: `#d97757`, warm orange for primary actions.
+- `accent-muted`: pale orange tint for summaries or highlights.
+- `info`: `#6a9bcc`, restrained blue for secondary accents.
+- `success`: `#788c5d`, restrained green for positive states.
 
 Avoid saturated gradients, neon colors, heavy purple-blue palettes, and decorative blobs.
 
 ## Typography
 
-- Use compact headings.
+- Use Poppins for compact headings, controls, and UI chrome.
+- Use Lora for body and chat text.
 - Keep body text short.
 - Avoid all-caps labels except tiny metadata.
 - Do not use negative letter spacing.

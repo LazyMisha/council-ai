@@ -42,6 +42,19 @@ The app currently has a Claude/ChatGPT-like layout: left sidebar, central chat r
 - When implementing library-specific code, check fresh docs through Context7 MCP if available.
 - Add tests around orchestration, validation, data transformations, and role/template logic.
 
+## Automatic Project Skill Use
+
+Use installed skills automatically when relevant. Use the smallest useful set.
+Project instructions beat generic skill advice.
+
+Prefer:
+- `next-best-practices` for Next.js App Router work.
+- `vercel-react-best-practices` for React rendering, async work, performance, and client/server boundaries.
+- `nextjs-react-typescript` for general Next.js, React, and TypeScript work.
+- `frontend-design`, `web-design-guidelines`, and `ui-ux-pro-max` for UI, layout, interaction, and design review tasks.
+- `brand-guidelines` for Anthropic-inspired palette, typography, and visual direction tasks.
+- `improve-codebase-architecture` for architecture, refactors, interfaces, and module boundaries.
+
 ## Product Constraints
 
 - Chat rooms are the primary product object.

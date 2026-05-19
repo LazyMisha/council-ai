@@ -1,5 +1,5 @@
 import { isRespondRequestBody } from "@/features/chat-room/api/contracts";
-import { generateAIResponses } from "@/features/chat-room/server/ai-orchestrator";
+import { streamAIResponse } from "@/features/chat-room/server/ai-orchestrator";
 
 export async function POST(request: Request) {
   let body: unknown;
@@ -14,7 +14,27 @@ export async function POST(request: Request) {
     return Response.json({ error: "Invalid request body." }, { status: 400 });
   }
 
-  const { messages } = await generateAIResponses(body);
+  const encoder = new TextEncoder();
 
-  return Response.json({ messages });
+  const stream = new ReadableStream({
+    async start(controller) {
+      try {
+        for await (const event of streamAIResponse(body)) {
+          controller.enqueue(
+            encoder.encode(JSON.stringify(event) + "\n"),
+          );
+        }
+        controller.close();
+      } catch {
+        controller.close();
+      }
+    },
+  });
+
+  return new Response(stream, {
+    headers: {
+      "Content-Type": "application/x-ndjson",
+      "Cache-Control": "no-cache",
+    },
+  });
 }

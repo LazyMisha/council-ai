@@ -2,8 +2,19 @@ import { describe, expect, it, vi } from "vitest";
 import { POST } from "./route";
 
 vi.mock("@/features/chat-room/server/ai-orchestrator", () => ({
-  generateAIResponses: vi.fn().mockResolvedValue({ messages: [] }),
+  streamAIResponse: vi.fn().mockImplementation(async function* () {
+    yield { type: "done", message: { id: "mock", authorType: "ai" as const, role: "Mock", content: "" } };
+  }),
 }));
+
+async function readStream(response: Response) {
+  const text = await response.text();
+  return text
+    .trim()
+    .split("\n")
+    .filter(Boolean)
+    .map((line) => JSON.parse(line));
+}
 
 describe("POST /api/chat-room/respond", () => {
   it("returns 400 for invalid JSON", async () => {
@@ -28,18 +39,19 @@ describe("POST /api/chat-room/respond", () => {
   });
 
   it("allows continue mode without latestUserMessage", async () => {
-    const { generateAIResponses } = await import(
+    const { streamAIResponse } = await import(
       "@/features/chat-room/server/ai-orchestrator"
     );
-    vi.mocked(generateAIResponses).mockResolvedValue({
-      messages: [
-        {
+    vi.mocked(streamAIResponse).mockImplementation(async function* () {
+      yield {
+        type: "done",
+        message: {
           id: "msg-continue",
-          authorType: "ai",
+          authorType: "ai" as const,
           role: "Skeptic",
           content: "Continue from the unresolved risk.",
         },
-      ],
+      };
     });
 
     const request = new Request("http://localhost", {
@@ -57,7 +69,7 @@ describe("POST /api/chat-room/respond", () => {
 
     const response = await POST(request);
     expect(response.status).toBe(200);
-    expect(vi.mocked(generateAIResponses)).toHaveBeenLastCalledWith({
+    expect(vi.mocked(streamAIResponse)).toHaveBeenLastCalledWith({
       mode: "continue",
       aiInstances: [
         { id: "ai-1", name: "Skeptic", instructions: "Focus on risks." },
@@ -66,6 +78,13 @@ describe("POST /api/chat-room/respond", () => {
         { id: "msg-0", authorType: "user", content: "Should we launch?" },
       ],
     });
+
+    const events = await readStream(response);
+    expect(events).toHaveLength(1);
+    expect(events[0].type).toBe("done");
+    expect(events[0].message.content).toBe(
+      "Continue from the unresolved risk.",
+    );
   });
 
   it("returns 400 when aiInstances is not an array", async () => {
@@ -141,19 +160,21 @@ describe("POST /api/chat-room/respond", () => {
     expect(response.status).toBe(400);
   });
 
-  it("returns 200 with messages for a valid body", async () => {
-    const { generateAIResponses } = await import(
+  it("returns 200 with a stream for a valid body", async () => {
+    const { streamAIResponse } = await import(
       "@/features/chat-room/server/ai-orchestrator"
     );
-    vi.mocked(generateAIResponses).mockResolvedValue({
-      messages: [
-        {
+    vi.mocked(streamAIResponse).mockImplementation(async function* () {
+      yield { type: "chunk", content: "Risky" };
+      yield {
+        type: "done",
+        message: {
           id: "msg-1",
-          authorType: "ai",
+          authorType: "ai" as const,
           role: "Skeptic",
           content: "Risky.",
         },
-      ],
+      };
     });
 
     const request = new Request("http://localhost", {
@@ -172,8 +193,12 @@ describe("POST /api/chat-room/respond", () => {
 
     const response = await POST(request);
     expect(response.status).toBe(200);
-    const json = await response.json();
-    expect(json.messages).toHaveLength(1);
-    expect(json.messages[0].content).toBe("Risky.");
+    expect(response.headers.get("content-type")).toBe("application/x-ndjson");
+
+    const events = await readStream(response);
+    expect(events).toHaveLength(2);
+    expect(events[0]).toEqual({ type: "chunk", content: "Risky" });
+    expect(events[1].type).toBe("done");
+    expect(events[1].message.content).toBe("Risky.");
   });
 });

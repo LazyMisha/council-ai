@@ -8,6 +8,29 @@ import {
 import { afterEach, vi } from "vitest";
 import { ChatShell } from "./chat-shell";
 
+
+function createMockStreamResponse(events: Array<Record<string, unknown>>): Response {
+  const encoder = new TextEncoder();
+  const chunks = events.map((e) => encoder.encode(JSON.stringify(e) + "\n"));
+  let index = 0;
+  return {
+    ok: true,
+    body: {
+      getReader() {
+        return {
+          read() {
+            if (index >= chunks.length) {
+              return Promise.resolve({ done: true as const, value: undefined });
+            }
+            return Promise.resolve({ done: false as const, value: chunks[index++] });
+          },
+          releaseLock() {},
+        };
+      },
+    },
+  } as unknown as Response;
+}
+
 describe("ChatShell", () => {
   beforeEach(() => {
     window.localStorage.clear();
@@ -458,19 +481,19 @@ describe("ChatShell", () => {
       ).toBeInTheDocument();
     });
 
-    response.resolve({
-      ok: true,
-      json: async () => ({
-        messages: [
-          {
+    response.resolve(
+      createMockStreamResponse([
+        {
+          type: "done",
+          message: {
             id: "ai-response",
             authorType: "ai",
             role: "Software Architect",
             content: "Start with the integration boundary.",
           },
-        ],
-      }),
-    } as Response);
+        },
+      ]),
+    );
 
     await waitFor(() => {
       expect(

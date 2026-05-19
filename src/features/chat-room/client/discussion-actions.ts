@@ -1,13 +1,15 @@
 import {
   appendMessages,
   appendUserMessage,
+  createId,
   createUserMessage,
   markCanSummarize,
   markCanSummarizeIfMessagesUnchanged,
+  updateMessageContent,
 } from "../domain/state";
 import type { AIInstance, Message } from "../domain/types";
 import {
-  requestAIResponses,
+  streamAIResponses,
   requestFinishDecision,
   requestSpeakerSelection,
   requestSummary,
@@ -39,28 +41,50 @@ export function createDiscussionActions(state: ChatRoomState) {
         state,
       });
 
-      const [responseMessages] = await Promise.all([
-        requestAIResponses({
-          mode: "reply",
-          latestUserMessage: content,
-          aiInstances,
-          recentMessages,
-          targetAIInstanceId: selectedInstance.id,
-        }),
-        wait(700),
-      ]);
-
-      if (responseMessages.length === 0) {
-        return;
-      }
+      const placeholderId = createId("streaming");
+      const placeholder: Message = {
+        id: placeholderId,
+        authorType: "ai",
+        role: selectedInstance.name,
+        content: "",
+      };
 
       state.setChatRooms((rooms) =>
-        appendMessages(rooms, roomId, responseMessages),
+        appendMessages(rooms, roomId, [placeholder]),
       );
-      void fetchFinishDecision(roomId, aiInstances, [
-        ...recentMessages,
-        ...responseMessages,
-      ]);
+
+      let finalMessage: Message | null = null;
+
+      for await (const event of streamAIResponses({
+        mode: "reply",
+        latestUserMessage: content,
+        aiInstances,
+        recentMessages,
+        targetAIInstanceId: selectedInstance.id,
+      })) {
+        if (event.type === "chunk") {
+          state.setChatRooms((rooms) =>
+            updateMessageContent(rooms, roomId, placeholderId, event.content),
+          );
+        } else if (event.type === "done") {
+          finalMessage = event.message;
+        }
+      }
+
+      if (finalMessage) {
+        state.setChatRooms((rooms) =>
+          updateMessageContent(
+            rooms,
+            roomId,
+            placeholderId,
+            finalMessage.content,
+          ),
+        );
+        void fetchFinishDecision(roomId, aiInstances, [
+          ...recentMessages,
+          finalMessage,
+        ]);
+      }
     } finally {
       state.clearPendingAIStatus(roomId);
     }
@@ -161,24 +185,56 @@ export function createDiscussionActions(state: ChatRoomState) {
           break;
         }
 
-        const [responseMessages] = await Promise.all([
-          requestAIResponses({
-            mode: "continue",
-            aiInstances,
-            recentMessages: currentMessages,
-            targetAIInstanceId: selectedInstance.id,
-          }),
-          wait(700),
-        ]);
+        const placeholderId = createId("streaming");
+        const placeholder: Message = {
+          id: placeholderId,
+          authorType: "ai",
+          role: selectedInstance.name,
+          content: "",
+        };
 
-        if (responseMessages.length === 0) {
+        state.setChatRooms((rooms) =>
+          appendMessages(rooms, roomId, [placeholder]),
+      );
+
+        let finalMessage: Message | null = null;
+
+        for await (const event of streamAIResponses({
+          mode: "continue",
+          aiInstances,
+          recentMessages: currentMessages,
+          targetAIInstanceId: selectedInstance.id,
+        })) {
+          if (event.type === "chunk") {
+            state.setChatRooms((rooms) =>
+              updateMessageContent(
+                rooms,
+                roomId,
+                placeholderId,
+                event.content,
+              ),
+            );
+          } else if (event.type === "done") {
+            finalMessage = event.message;
+          }
+        }
+
+        await wait(300);
+
+        if (!finalMessage) {
           break;
         }
 
-        currentMessages = [...currentMessages, ...responseMessages];
+        currentMessages = [...currentMessages, finalMessage];
         state.setChatRooms((rooms) =>
-          appendMessages(rooms, roomId, responseMessages),
+          updateMessageContent(
+            rooms,
+            roomId,
+            placeholderId,
+            finalMessage.content,
+          ),
         );
+
         if (state.stoppingAutoDiscussRef.current.has(roomId)) {
           state.clearPendingAIStatus(roomId);
         } else {

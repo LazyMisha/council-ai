@@ -13,6 +13,15 @@
             "command": "/Users/mykhailotrunov/.local/bin/graphify hook-check"
           }
         ]
+      },
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": ".codex/hooks/context7-reminder.sh"
+          }
+        ]
       }
     ]
   }

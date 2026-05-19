@@ -3,6 +3,28 @@ import { describe, expect, it, vi } from "vitest";
 import type { AIInstance } from "../domain/types";
 import { ChatShell } from "./chat-shell";
 
+function createMockStreamResponse(events: Array<Record<string, unknown>>): Response {
+  const encoder = new TextEncoder();
+  const chunks = events.map((e) => encoder.encode(JSON.stringify(e) + "\n"));
+  let index = 0;
+  return {
+    ok: true,
+    body: {
+      getReader() {
+        return {
+          read() {
+            if (index >= chunks.length) {
+              return Promise.resolve({ done: true as const, value: undefined });
+            }
+            return Promise.resolve({ done: false as const, value: chunks[index++] });
+          },
+          releaseLock() {},
+        };
+      },
+    },
+  } as unknown as Response;
+}
+
 describe("Auto-discuss", () => {
   beforeEach(() => {
     window.localStorage.clear();
@@ -75,19 +97,17 @@ describe("Auto-discuss", () => {
       if (typeof url !== "string") return { ok: false } as Response;
 
       if (url.includes("/api/chat-room/respond")) {
-        return {
-          ok: true,
-          json: async () => ({
-            messages: [
-              {
-                id: "ai-response",
-                authorType: "ai",
-                role: "Skeptic",
-                content: "First auto response.",
-              },
-            ],
-          }),
-        } as Response;
+        return createMockStreamResponse([
+          {
+            type: "done",
+            message: {
+              id: "ai-response",
+              authorType: "ai",
+              role: "Skeptic",
+              content: "First auto response.",
+            },
+          },
+        ]);
       }
 
       if (url.includes("/api/chat-room/finish")) {
@@ -142,19 +162,17 @@ describe("Auto-discuss", () => {
 
         if (url.includes("/api/chat-room/respond")) {
           respondCount++;
-          return {
-            ok: true,
-            json: async () => ({
-              messages: [
-                {
-                  id: `ai-respond-${respondCount}`,
-                  authorType: "ai",
-                  role: "Skeptic",
-                  content: `Auto response ${respondCount}`,
-                },
-              ],
-            }),
-          } as Response;
+          return createMockStreamResponse([
+            {
+              type: "done",
+              message: {
+                id: `ai-respond-${respondCount}`,
+                authorType: "ai",
+                role: "Skeptic",
+                content: `Auto response ${respondCount}`,
+              },
+            },
+          ]);
         }
 
         if (url.includes("/api/chat-room/finish")) {
@@ -217,19 +235,17 @@ describe("Auto-discuss", () => {
 
         if (url.includes("/api/chat-room/respond")) {
           respondCount++;
-          return {
-            ok: true,
-            json: async () => ({
-              messages: [
-                {
-                  id: `ai-respond-${respondCount}`,
-                  authorType: "ai",
-                  role: "Skeptic",
-                  content: `Auto response ${respondCount}`,
-                },
-              ],
-            }),
-          } as Response;
+          return createMockStreamResponse([
+            {
+              type: "done",
+              message: {
+                id: `ai-respond-${respondCount}`,
+                authorType: "ai",
+                role: "Skeptic",
+                content: `Auto response ${respondCount}`,
+              },
+            },
+          ]);
         }
 
         if (url.includes("/api/chat-room/finish")) {
@@ -270,24 +286,23 @@ describe("Auto-discuss", () => {
       if (typeof url !== "string") return { ok: false } as Response;
 
       if (url.includes("/api/chat-room/respond")) {
-        return {
-          ok: true,
-          json: async () =>
-            new Promise((resolve) => {
-              setTimeout(() => {
-                resolve({
-                  messages: [
-                    {
-                      id: "ai-first",
-                      authorType: "ai",
-                      role: "Skeptic",
-                      content: "First response.",
-                    },
-                  ],
-                });
-              }, 100);
-            }),
-        } as Response;
+        return new Promise((resolve) => {
+          setTimeout(() => {
+            resolve(
+              createMockStreamResponse([
+                {
+                  type: "done",
+                  message: {
+                    id: "ai-first",
+                    authorType: "ai",
+                    role: "Skeptic",
+                    content: "First response.",
+                  },
+                },
+              ]),
+            );
+          }, 100);
+        });
       }
 
       if (url.includes("/api/chat-room/finish")) {
@@ -341,24 +356,23 @@ describe("Auto-discuss", () => {
 
         if (url.includes("/api/chat-room/respond")) {
           respondCount++;
-          return {
-            ok: true,
-            json: async () =>
-              new Promise((resolve) => {
-                setTimeout(() => {
-                  resolve({
-                    messages: [
-                      {
-                        id: `ai-respond-${respondCount}`,
-                        authorType: "ai",
-                        role: "Skeptic",
-                        content: `Auto response ${respondCount}`,
-                      },
-                    ],
-                  });
-                }, 200);
-              }),
-          } as Response;
+          return new Promise((resolve) => {
+            setTimeout(() => {
+              resolve(
+                createMockStreamResponse([
+                  {
+                    type: "done",
+                    message: {
+                      id: `ai-respond-${respondCount}`,
+                      authorType: "ai",
+                      role: "Skeptic",
+                      content: `Auto response ${respondCount}`,
+                    },
+                  },
+                ]),
+              );
+            }, 200);
+          });
         }
 
         if (url.includes("/api/chat-room/finish")) {
@@ -410,24 +424,23 @@ describe("Auto-discuss", () => {
       if (typeof url !== "string") return { ok: false } as Response;
 
       if (url.includes("/api/chat-room/respond")) {
-        return {
-          ok: true,
-          json: async () =>
-            new Promise((resolve) => {
-              setTimeout(() => {
-                resolve({
-                  messages: [
-                    {
-                      id: "ai-first",
-                      authorType: "ai",
-                      role: "Skeptic",
-                      content: "First response.",
-                    },
-                  ],
-                });
-              }, 100);
-            }),
-        } as Response;
+        return new Promise((resolve) => {
+          setTimeout(() => {
+            resolve(
+              createMockStreamResponse([
+                {
+                  type: "done",
+                  message: {
+                    id: "ai-first",
+                    authorType: "ai",
+                    role: "Skeptic",
+                    content: "First response.",
+                  },
+                },
+              ]),
+            );
+          }, 100);
+        });
       }
 
       if (url.includes("/api/chat-room/finish")) {

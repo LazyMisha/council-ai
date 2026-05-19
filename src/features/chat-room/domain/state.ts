@@ -176,6 +176,20 @@ export function markCanSummarizeIfMessagesUnchanged({
   });
 }
 
+export function updateMessageContent(
+  chatRooms: ChatRoom[],
+  roomId: string,
+  messageId: string,
+  content: string,
+) {
+  return updateChatRoom(chatRooms, roomId, (room) => ({
+    ...room,
+    messages: room.messages.map((message) =>
+      message.id === messageId ? { ...message, content } : message,
+    ),
+  }));
+}
+
 function updateChatRoom(
   chatRooms: ChatRoom[],
   roomId: string,

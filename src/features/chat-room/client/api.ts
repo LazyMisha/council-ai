@@ -1,3 +1,4 @@
+import type { StreamEvent } from "../server/ai-orchestrator";
 import type { FinishDecision } from "../server/finish-detector";
 import type { DiscussionMode } from "../server/role-prompts";
 import type { SpeakerSelection } from "../server/speaker-selector";
@@ -11,7 +12,9 @@ type RespondInput = {
   targetAIInstanceId?: string;
 };
 
-export async function requestAIResponses(input: RespondInput) {
+export async function* streamAIResponses(
+  input: RespondInput,
+): AsyncGenerator<StreamEvent> {
   const response = await fetch("/api/chat-room/respond", {
     method: "POST",
     headers: {
@@ -20,12 +23,41 @@ export async function requestAIResponses(input: RespondInput) {
     body: JSON.stringify(input),
   });
 
-  if (!response.ok) {
-    return [];
+  if (!response.ok || !response.body) {
+    return;
   }
 
-  const data = (await response.json()) as { messages?: Message[] };
-  return data.messages ?? [];
+  const reader = response.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = "";
+
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+
+    buffer += decoder.decode(value, { stream: true });
+    const lines = buffer.split("\n");
+    buffer = lines.pop() ?? "";
+
+    for (const line of lines) {
+      if (!line.trim()) continue;
+      try {
+        const event = JSON.parse(line) as StreamEvent;
+        yield event;
+      } catch {
+        // Skip malformed lines.
+      }
+    }
+  }
+
+  if (buffer.trim()) {
+    try {
+      const event = JSON.parse(buffer) as StreamEvent;
+      yield event;
+    } catch {
+      // Skip malformed final line.
+    }
+  }
 }
 
 export async function requestSpeakerSelection({

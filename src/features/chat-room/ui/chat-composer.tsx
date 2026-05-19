@@ -10,14 +10,27 @@ export function ChatComposer({ controller }: ChatComposerProps) {
   const activeRoom = controller.activeRoom;
   if (!activeRoom) return null;
 
+  const hasAIInstances = activeRoom.aiInstances.length > 0;
+  const canAutoDiscuss = activeRoom.aiInstances.length > 1;
+  const canSend = hasAIInstances && !controller.isAutoDiscussing;
+  const showDiscussionActions =
+    controller.isAutoDiscussing ||
+    canAutoDiscuss ||
+    activeRoom.canSummarize ||
+    controller.hasSummary;
+
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    if (!canSend) return;
+
     void controller.sendMessage();
   };
 
   const handleInputKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
     if (event.key === "Enter") {
       event.preventDefault();
+      if (!canSend) return;
+
       void controller.sendMessage();
     }
   };
@@ -25,13 +38,13 @@ export function ChatComposer({ controller }: ChatComposerProps) {
   return (
     <div className="shrink-0 border-t border-border-subtle bg-surface px-5 pb-5 pt-4">
       <div className="mx-auto max-w-3xl lg:max-w-4xl">
-        {activeRoom.aiInstances.length === 0 ? (
+        {!hasAIInstances ? (
           <p className="mb-3 text-sm text-text-tertiary">
             Add AI instances to start a discussion.
           </p>
         ) : null}
 
-        {controller.hasAIDiscussionRound ? (
+        {controller.hasAIDiscussionRound && showDiscussionActions ? (
           <div className="mb-3 flex flex-wrap gap-2">
             {controller.isAutoDiscussing ? (
               <>
@@ -49,28 +62,22 @@ export function ChatComposer({ controller }: ChatComposerProps) {
                   </p>
                 ) : null}
               </>
-            ) : (
-              <>
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  onClick={controller.autoDiscuss}
-                  disabled={
-                    controller.isAutoDiscussing ||
-                    controller.isThinking ||
-                    activeRoom.aiInstances.length === 0
-                  }
-                >
-                  Auto-discuss
-                </Button>
-              </>
-            )}
+            ) : canAutoDiscuss ? (
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={controller.autoDiscuss}
+                disabled={controller.isAutoDiscussing || controller.isThinking}
+              >
+                Auto-discuss
+              </Button>
+            ) : null}
             {activeRoom.canSummarize || controller.hasSummary ? (
               <Button
                 variant="primary"
                 size="sm"
                 onClick={controller.summarizeDiscussion}
-                disabled={controller.isThinking && !controller.isAutoDiscussing}
+                disabled={controller.isThinking}
               >
                 Summarize
               </Button>
@@ -94,7 +101,7 @@ export function ChatComposer({ controller }: ChatComposerProps) {
           <Button
             type="submit"
             variant="primary"
-            disabled={controller.isAutoDiscussing}
+            disabled={!canSend}
             className="h-11 px-4"
           >
             Send

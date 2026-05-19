@@ -55,6 +55,29 @@ describe("ChatShell", () => {
     expect(screen.getByText("+ Add AI")).toBeInTheDocument();
   });
 
+  it("disables Send until the room has an AI instance", () => {
+    render(<ChatShell />);
+
+    createRoomFromEmptyState();
+
+    const input = screen.getByLabelText("Start a topic or reply");
+    const sendButton = screen.getByRole("button", { name: "Send" });
+
+    expect(sendButton).toBeDisabled();
+
+    fireEvent.change(input, {
+      target: { value: "Should we launch?" },
+    });
+    fireEvent.keyDown(input, { key: "Enter" });
+
+    expect(screen.queryByText("Should we launch?")).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "+ Add AI" }));
+    fireEvent.click(screen.getByText("Software Architect"));
+
+    expect(sendButton).not.toBeDisabled();
+  });
+
   it("shows speaker selection and role-specific thinking states", async () => {
     const room = {
       id: "room-1",
@@ -248,6 +271,11 @@ describe("ChatShell", () => {
       title: "Test Room",
       aiInstances: [
         { id: "ai-1", name: "Skeptic", instructions: "Focus on risks." },
+        {
+          id: "ai-2",
+          name: "Optimist",
+          instructions: "Focus on opportunities.",
+        },
       ],
       messages: [
         { id: "msg-1", authorType: "user", content: "Hello" },

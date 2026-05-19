@@ -1,5 +1,6 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
+import type { AIInstance } from "../domain/types";
 import { ChatShell } from "./chat-shell";
 
 describe("Auto-discuss", () => {
@@ -11,13 +12,22 @@ describe("Auto-discuss", () => {
     vi.restoreAllMocks();
   });
 
-  const setupRoomWithDiscussion = () => {
+  const defaultAIInstances: AIInstance[] = [
+    { id: "ai-1", name: "Skeptic", instructions: "Focus on risks." },
+    {
+      id: "ai-2",
+      name: "Optimist",
+      instructions: "Focus on opportunities.",
+    },
+  ];
+
+  const setupRoomWithDiscussion = (
+    aiInstances: AIInstance[] = defaultAIInstances,
+  ) => {
     const room = {
       id: "room-1",
       title: "Test Room",
-      aiInstances: [
-        { id: "ai-1", name: "Skeptic", instructions: "Focus on risks." },
-      ],
+      aiInstances,
       messages: [
         { id: "msg-1", authorType: "user", content: "Should we launch?" },
         { id: "msg-2", authorType: "ai", role: "Skeptic", content: "Risky." },
@@ -34,9 +44,86 @@ describe("Auto-discuss", () => {
     );
   };
 
-  it("shows Auto-discuss button after AI discussion starts", async () => {
+  it("shows Auto-discuss button after AI discussion starts with multiple AI instances", async () => {
     setupRoomWithDiscussion();
     render(<ChatShell />);
+
+    await waitFor(() => {
+      expect(screen.getByText("Auto-discuss")).toBeInTheDocument();
+    });
+  });
+
+  it("hides Auto-discuss when only one AI instance exists", async () => {
+    setupRoomWithDiscussion([
+      { id: "ai-1", name: "Skeptic", instructions: "Focus on risks." },
+    ]);
+    render(<ChatShell />);
+
+    await waitFor(() => {
+      expect(screen.getByText("Risky.")).toBeInTheDocument();
+    });
+
+    expect(screen.queryByText("Auto-discuss")).not.toBeInTheDocument();
+  });
+
+  it("shows next-speaker selection after an auto-discussion response", async () => {
+    setupRoomWithDiscussion();
+
+    const finishDecision = createDeferred<Response>();
+
+    vi.spyOn(global, "fetch").mockImplementation(async (url) => {
+      if (typeof url !== "string") return { ok: false } as Response;
+
+      if (url.includes("/api/chat-room/respond")) {
+        return {
+          ok: true,
+          json: async () => ({
+            messages: [
+              {
+                id: "ai-response",
+                authorType: "ai",
+                role: "Skeptic",
+                content: "First auto response.",
+              },
+            ],
+          }),
+        } as Response;
+      }
+
+      if (url.includes("/api/chat-room/finish")) {
+        return finishDecision.promise;
+      }
+
+      return { ok: false } as Response;
+    });
+
+    render(<ChatShell />);
+
+    await waitFor(() => {
+      expect(screen.getByText("Auto-discuss")).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByText("Auto-discuss"));
+
+    await waitFor(
+      () => {
+        expect(screen.getByText("First auto response.")).toBeInTheDocument();
+      },
+      { timeout: 5000 },
+    );
+
+    expect(
+      screen.getByText("Choosing who should answer next..."),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByText("Skeptic is thinking..."),
+    ).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByText("Stop"));
+    finishDecision.resolve({
+      ok: true,
+      json: async () => ({ status: "continue_discussion" }),
+    } as Response);
 
     await waitFor(() => {
       expect(screen.getByText("Auto-discuss")).toBeInTheDocument();
@@ -94,7 +181,7 @@ describe("Auto-discuss", () => {
 
       await waitFor(
         () => {
-          expect(screen.getByText("Summarize")).toBeInTheDocument();
+          expect(screen.getByText("Summarize")).toBeDisabled();
         },
         { timeout: 5000 },
       );
@@ -112,6 +199,8 @@ describe("Auto-discuss", () => {
       await waitFor(() => {
         expect(screen.getByText("Auto-discuss")).toBeInTheDocument();
       });
+
+      expect(screen.getByText("Summarize")).not.toBeDisabled();
     },
     15000,
   );
@@ -368,3 +457,12 @@ describe("Auto-discuss", () => {
     expect(screen.getByText("Send")).toBeDisabled();
   });
 });
+
+function createDeferred<T>() {
+  let resolve!: (value: T) => void;
+  const promise = new Promise<T>((res) => {
+    resolve = res;
+  });
+
+  return { promise, resolve };
+}

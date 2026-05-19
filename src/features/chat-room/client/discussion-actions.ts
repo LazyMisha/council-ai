@@ -17,22 +17,19 @@ import type { ChatRoomState } from "./use-chat-room-state";
 export function createDiscussionActions(state: ChatRoomState) {
   const sendMessage = async () => {
     const content = state.draft.trim();
+    const activeRoom = state.activeRoom;
 
-    if (!content || !state.activeRoom) {
+    if (!content || !activeRoom || activeRoom.aiInstances.length === 0) {
       return;
     }
 
-    const roomId = state.activeRoom.id;
-    const aiInstances = state.activeRoom.aiInstances;
+    const roomId = activeRoom.id;
+    const aiInstances = activeRoom.aiInstances;
     const message = createUserMessage(content);
-    const recentMessages = [...state.activeRoom.messages, message];
+    const recentMessages = [...activeRoom.messages, message];
 
     state.setChatRooms((rooms) => appendUserMessage(rooms, roomId, message));
     state.setDraft("");
-
-    if (aiInstances.length === 0) {
-      return;
-    }
 
     try {
       const selectedInstance = await selectNextAIInstance({
@@ -129,21 +126,23 @@ export function createDiscussionActions(state: ChatRoomState) {
   };
 
   const autoDiscuss = async () => {
+    const activeRoom = state.activeRoom;
+
     if (
-      !state.activeRoom ||
-      state.activeRoom.aiInstances.length === 0 ||
-      state.autoDiscussingRoomIds.includes(state.activeRoom.id)
+      !activeRoom ||
+      activeRoom.aiInstances.length < 2 ||
+      state.autoDiscussingRoomIds.includes(activeRoom.id)
     ) {
       return;
     }
 
-    const roomId = state.activeRoom.id;
+    const roomId = activeRoom.id;
     const maxTurns = 20;
 
     state.setAutoDiscussingRoomIds((ids) => [...ids, roomId]);
 
-    let currentMessages = [...state.activeRoom.messages];
-    const aiInstances = state.activeRoom.aiInstances;
+    let currentMessages = [...activeRoom.messages];
+    const aiInstances = activeRoom.aiInstances;
 
     try {
       for (let turn = 0; turn < maxTurns; turn++) {
@@ -180,6 +179,14 @@ export function createDiscussionActions(state: ChatRoomState) {
         state.setChatRooms((rooms) =>
           appendMessages(rooms, roomId, responseMessages),
         );
+        if (state.stoppingAutoDiscussRef.current.has(roomId)) {
+          state.clearPendingAIStatus(roomId);
+        } else {
+          state.setPendingAIStatus({
+            roomId,
+            phase: "selecting",
+          });
+        }
 
         const finishDecision = await requestFinishDecision({
           aiInstances,

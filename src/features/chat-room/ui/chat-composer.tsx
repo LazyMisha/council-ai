@@ -54,13 +54,8 @@ export function ChatComposer({ controller }: ChatComposerProps) {
                   onClick={controller.stopAutoDiscuss}
                   disabled={controller.isStoppingAutoDiscuss}
                 >
-                  {controller.isStoppingAutoDiscuss ? "Stopping..." : "Stop"}
+                  {controller.isStoppingAutoDiscuss ? "Stopping" : "Stop"}
                 </Button>
-                {controller.isStoppingAutoDiscuss ? (
-                  <p className="self-center text-sm text-text-tertiary">
-                    Stopping after this response...
-                  </p>
-                ) : null}
               </>
             ) : canAutoDiscuss ? (
               <Button

@@ -121,7 +121,7 @@ Behavior:
 
 The Stop button appears while auto-discussion is running and prevents future turns from starting. In-flight requests may still complete.
 
-Send is disabled while auto-discussion is running. Summarize remains available if it becomes available during auto-discussion. The pending indicator shows either speaker selection or the selected AI instance thinking. When Stop is clicked, the Stop button changes to `Stopping...` until the current in-flight turn finishes.
+Send is disabled while auto-discussion is running. Summarize remains available if it becomes available during auto-discussion. The pending indicator shows either speaker selection or the selected AI instance thinking. When Stop is clicked, the Stop button changes to `Stopping` until the current in-flight turn finishes.
 
 ## Future Improvements
 

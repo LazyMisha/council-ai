@@ -26,11 +26,15 @@ describe("role prompts", () => {
       expect(instructions).toContain(
         "previous AI messages in this same round",
       );
-      expect(instructions).toContain("Max 80 words");
-      expect(instructions).toContain("Prefer 2-4 short sentences");
+      expect(instructions).toContain("Max 55 words");
+      expect(instructions).toContain("Prefer 1-3 short sentences");
+      expect(instructions).toContain(
+        "Sound like a natural chat participant",
+      );
       expect(instructions).toContain("No essays");
       expect(instructions).toContain("No report tone");
       expect(instructions).toContain("No generic filler");
+      expect(instructions).toContain("No headings or section labels");
       expect(instructions).toContain("React to the previous participant only when useful");
       expect(instructions).toContain("Avoid repeating what was already said");
       expect(instructions).toContain('Do not say "As an AI"');
@@ -51,7 +55,7 @@ describe("role prompts", () => {
       instructions: "Focus on risks.",
     });
 
-    expect(instructions).toContain("For simple topics, use max 40 words");
+    expect(instructions).toContain("For simple topics, use max 25 words");
     expect(instructions).toContain("Do not over-analyze");
     expect(instructions).toContain("Keep it casual and direct");
   });
@@ -66,7 +70,7 @@ describe("role prompts", () => {
     expect(instructions).toContain(
       "the concise chat-room style and word limits always win",
     );
-    expect(instructions).toContain("Max 80 words");
+    expect(instructions).toContain("Max 55 words");
   });
 
   it("builds role input from recent context and the latest user message", () => {

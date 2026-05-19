@@ -31,8 +31,8 @@ function trimFiller(content: string): string {
 
 function softTruncate(content: string): string {
   const words = content.trim().split(/\s+/).filter((w) => w.length > 0);
-  const hardLimit = 120;
-  const target = 100;
+  const hardLimit = 80;
+  const target = 65;
 
   if (words.length <= hardLimit) {
     return content;

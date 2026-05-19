@@ -99,29 +99,31 @@ export function ChatHeader({ controller, onOpenMobileDrawer }: ChatHeaderProps) 
                   {activeRoom.aiInstances.map((instance) => (
                     <div
                       key={instance.id}
-                      className="relative flex min-h-11 items-center gap-2 rounded-md px-3 py-2 hover:bg-background"
+                      className="rounded-md hover:bg-background"
                     >
-                      <button
-                        type="button"
-                        onClick={() => handleViewInstance(instance)}
-                        className="min-w-0 flex-1 truncate text-left text-sm font-medium text-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent cursor-pointer"
-                      >
-                        {instance.name}
-                      </button>
-                      <IconButton
-                        aria-label={`${instance.name} options`}
-                        onClick={(event) => {
-                          stopMenuClick(event);
-                          controller.setOpenMenuInstanceId((current) =>
-                            current === instance.id ? null : instance.id,
-                          );
-                        }}
-                      >
-                        &#x22EE;
-                      </IconButton>
+                      <div className="flex min-h-11 items-center gap-2 px-3 py-2">
+                        <button
+                          type="button"
+                          onClick={() => handleViewInstance(instance)}
+                          className="min-w-0 flex-1 truncate text-left text-sm font-medium text-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent cursor-pointer"
+                        >
+                          {instance.name}
+                        </button>
+                        <IconButton
+                          aria-label={`${instance.name} options`}
+                          onClick={(event) => {
+                            stopMenuClick(event);
+                            controller.setOpenMenuInstanceId((current) =>
+                              current === instance.id ? null : instance.id,
+                            );
+                          }}
+                        >
+                          &#x22EE;
+                        </IconButton>
+                      </div>
                       {controller.openMenuInstanceId === instance.id ? (
                         <div
-                          className="absolute right-0 top-9 z-[60] w-44 rounded-md border border-border-subtle bg-surface py-1 shadow-sm"
+                          className="mx-3 mb-2 rounded-md border border-border-subtle bg-surface py-1 shadow-sm"
                           onClick={stopMenuClick}
                         >
                           <MenuItem onClick={() => handleViewInstance(instance)}>

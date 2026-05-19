@@ -151,6 +151,54 @@ describe("ChatShell", () => {
     ).toBeInTheDocument();
   });
 
+  it("keeps the edit dialog open while editing fields", async () => {
+    seedChatRooms([
+      {
+        id: "room-1",
+        title: "Launch Plan",
+        aiInstances: [
+          {
+            id: "architect",
+            name: "Software Architect",
+            instructions: "Focus on technical feasibility.",
+          },
+        ],
+      },
+    ]);
+
+    render(<ChatShell />);
+
+    await waitFor(() => {
+      expect(screen.getByText("1 AI instance")).toBeInTheDocument();
+    });
+
+    fireEvent.click(
+      screen.getByRole("button", { name: "Show added AI instances" }),
+    );
+    const mobileAIList = screen.getByRole("region", {
+      name: "Added AI instances",
+    });
+    fireEvent.click(
+      within(mobileAIList).getByRole("button", {
+        name: "Software Architect options",
+      }),
+    );
+    fireEvent.click(within(mobileAIList).getByText("Edit"));
+
+    const dialog = screen.getByRole("dialog", { name: "Edit AI Instance" });
+    const nameInput = within(dialog).getByLabelText("Name");
+
+    fireEvent.click(nameInput);
+    fireEvent.change(nameInput, {
+      target: { value: "Systems Reviewer" },
+    });
+
+    expect(
+      screen.getByRole("dialog", { name: "Edit AI Instance" }),
+    ).toBeInTheDocument();
+    expect(nameInput).toHaveValue("Systems Reviewer");
+  });
+
   it("removes an AI instance from the mobile AI instance list", async () => {
     seedChatRooms([
       {

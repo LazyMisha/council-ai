@@ -19,6 +19,7 @@ export function Dialog({
   title,
 }: DialogProps) {
   const stopClick = (event: MouseEvent<HTMLDivElement>) => {
+    event.stopPropagation();
     event.nativeEvent.stopImmediatePropagation();
   };
 

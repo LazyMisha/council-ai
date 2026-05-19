@@ -314,10 +314,10 @@ describe("Auto-discuss", () => {
 
     fireEvent.click(screen.getByText("Stop"));
 
-    expect(screen.getByText("Stopping...")).toBeDisabled();
+    expect(screen.getByText("Stopping")).toBeDisabled();
     expect(
-      screen.getByText("Stopping after this response..."),
-    ).toBeInTheDocument();
+      screen.queryByText("Stopping after this response..."),
+    ).not.toBeInTheDocument();
 
     await waitFor(() => {
       expect(screen.getByText("Auto-discuss")).toBeInTheDocument();

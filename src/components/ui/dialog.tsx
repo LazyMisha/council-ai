@@ -24,7 +24,7 @@ export function Dialog({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-start justify-center bg-black/20 pt-32"
+      className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/20 px-4 py-[max(1rem,env(safe-area-inset-top))] sm:py-16"
       onClick={onClose}
     >
       <div
@@ -32,15 +32,15 @@ export function Dialog({
         aria-modal="true"
         aria-labelledby={`${title.toLowerCase().replace(/\W+/g, "-")}-title`}
         className={cn(
-          "w-80 rounded-md border border-border-subtle bg-surface p-4 shadow-sm",
+          "max-h-[calc(100dvh-2rem)] w-full max-w-sm overflow-y-auto rounded-md border border-border-subtle bg-surface p-4 shadow-sm",
           className,
         )}
         onClick={stopClick}
       >
-        <div className="mb-3 flex items-center justify-between">
+        <div className="mb-3 flex items-center justify-between gap-3">
           <h3
             id={`${title.toLowerCase().replace(/\W+/g, "-")}-title`}
-            className="text-base font-medium"
+            className="min-w-0 text-base font-medium"
           >
             {title}
           </h3>
@@ -48,7 +48,7 @@ export function Dialog({
             <button
               type="button"
               onClick={onClose}
-              className="text-sm text-text-tertiary hover:text-foreground cursor-pointer"
+              className="min-h-11 shrink-0 whitespace-nowrap rounded px-2 text-sm text-text-tertiary hover:text-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent md:min-h-0 cursor-pointer"
             >
               {closeLabel}
             </button>

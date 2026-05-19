@@ -24,13 +24,38 @@ export function createRoomActions(state: ChatRoomState) {
     state.setOpenMenuInstanceId(null);
     state.setIsRolePickerOpen(false);
     state.setIsRoomMenuOpen(false);
+    state.setOpenRoomMenuId(null);
+  };
+
+  const startRenameRoom = (roomId: string) => {
+    const room = state.chatRooms.find((item) => item.id === roomId);
+    if (!room) return;
+
+    state.setActiveRoomId(room.id);
+    state.setIsRenaming(true);
+    state.setRenameValue(room.title);
+    state.setRenameError(null);
+    state.setOpenRoomMenuId(null);
+    state.setIsRoomMenuOpen(false);
   };
 
   const startRename = () => {
     if (!state.activeRoom) return;
-    state.setIsRenaming(true);
-    state.setRenameValue(state.activeRoom.title);
-    state.setRenameError(null);
+
+    startRenameRoom(state.activeRoom.id);
+  };
+
+  const startClearRoom = (roomId: string) => {
+    state.setActiveRoomId(roomId);
+    state.setConfirmingClear(true);
+    state.setOpenRoomMenuId(null);
+    state.setIsRoomMenuOpen(false);
+  };
+
+  const startDeleteRoom = (roomId: string) => {
+    state.setActiveRoomId(roomId);
+    state.setConfirmingDelete(true);
+    state.setOpenRoomMenuId(null);
     state.setIsRoomMenuOpen(false);
   };
 
@@ -47,6 +72,7 @@ export function createRoomActions(state: ChatRoomState) {
     );
     state.setIsRenaming(false);
     state.setRenameError(null);
+    state.setOpenRoomMenuId(null);
   };
 
   const executeDeleteRoom = () => {
@@ -57,6 +83,7 @@ export function createRoomActions(state: ChatRoomState) {
     state.setActiveRoomId(result.activeRoomId);
     state.setConfirmingDelete(false);
     state.setIsRoomMenuOpen(false);
+    state.setOpenRoomMenuId(null);
   };
 
   const executeClearMessages = () => {
@@ -67,6 +94,7 @@ export function createRoomActions(state: ChatRoomState) {
     );
     state.setConfirmingClear(false);
     state.setIsRoomMenuOpen(false);
+    state.setOpenRoomMenuId(null);
   };
 
   return {
@@ -75,6 +103,9 @@ export function createRoomActions(state: ChatRoomState) {
     executeDeleteRoom,
     saveRename,
     selectChatRoom,
+    startClearRoom,
+    startDeleteRoom,
     startRename,
+    startRenameRoom,
   };
 }

@@ -48,6 +48,7 @@ export function useChatRoomState() {
   const [editError, setEditError] = useState<string | null>(null);
 
   const [isRoomMenuOpen, setIsRoomMenuOpen] = useState(false);
+  const [openRoomMenuId, setOpenRoomMenuId] = useState<string | null>(null);
   const [isRenaming, setIsRenaming] = useState(false);
   const [renameValue, setRenameValue] = useState("");
   const [renameError, setRenameError] = useState<string | null>(null);
@@ -77,6 +78,7 @@ export function useChatRoomState() {
   useEffect(() => {
     const handleDocumentClick = () => {
       setOpenMenuInstanceId(null);
+      setOpenRoomMenuId(null);
       setIsRolePickerOpen(false);
       setIsRoomMenuOpen(false);
     };
@@ -128,6 +130,7 @@ export function useChatRoomState() {
   };
 
   const closeRoomMenu = () => {
+    setOpenRoomMenuId(null);
     setIsRoomMenuOpen(false);
     setIsRenaming(false);
     setRenameValue("");
@@ -181,6 +184,7 @@ export function useChatRoomState() {
     isStoppingAutoDiscuss,
     isThinking,
     openMenuInstanceId,
+    openRoomMenuId,
     renameError,
     renameValue,
     resetCustomForm,
@@ -204,6 +208,7 @@ export function useChatRoomState() {
     setIsRolePickerOpen,
     setIsRoomMenuOpen,
     setOpenMenuInstanceId,
+    setOpenRoomMenuId,
     setPendingAIStatus,
     setRenameError,
     setRenameValue,

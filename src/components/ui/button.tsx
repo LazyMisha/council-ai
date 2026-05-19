@@ -46,9 +46,10 @@ export function Button({
     <button
       type={type}
       className={cn(
-        "inline-flex items-center justify-center rounded-md border cursor-pointer disabled:cursor-not-allowed disabled:opacity-50",
+        "inline-flex min-w-0 items-center justify-center whitespace-nowrap rounded-md border focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent cursor-pointer disabled:cursor-not-allowed disabled:opacity-50",
         variantClasses[variant],
         sizeClasses[size],
+        "min-h-11 md:min-h-0",
         fullWidth && "w-full",
         className,
       )}

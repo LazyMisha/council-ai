@@ -7,12 +7,12 @@ type RolePickerProps = {
 
 export function RolePicker({ controller }: RolePickerProps) {
   return (
-    <div>
+    <div className="min-w-0">
       <div className="mb-3 flex border-b border-border-subtle">
         <button
           type="button"
           onClick={() => controller.setActiveTab("predefined")}
-          className={`px-3 pb-2 text-sm font-medium ${
+          className={`min-h-11 px-3 pb-2 text-sm font-medium focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent md:min-h-0 ${
             controller.activeTab === "predefined"
               ? "border-b-2 border-accent text-foreground"
               : "text-text-secondary"
@@ -23,7 +23,7 @@ export function RolePicker({ controller }: RolePickerProps) {
         <button
           type="button"
           onClick={() => controller.setActiveTab("custom")}
-          className={`px-3 pb-2 text-sm font-medium ${
+          className={`min-h-11 px-3 pb-2 text-sm font-medium focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent md:min-h-0 ${
             controller.activeTab === "custom"
               ? "border-b-2 border-accent text-foreground"
               : "text-text-secondary"
@@ -44,7 +44,7 @@ export function RolePicker({ controller }: RolePickerProps) {
                 type="button"
                 disabled={isAdded}
                 onClick={() => controller.addPredefinedAIInstance(role)}
-                className="block w-full rounded-md px-3 py-2 text-left text-sm hover:bg-background disabled:cursor-not-allowed disabled:opacity-50 cursor-pointer"
+                className="block min-h-11 w-full rounded-md px-3 py-2 text-left text-sm hover:bg-background focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:cursor-not-allowed disabled:opacity-50 cursor-pointer"
               >
                 <div className="font-medium text-foreground">
                   {role.name}

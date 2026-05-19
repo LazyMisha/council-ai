@@ -14,9 +14,9 @@ export function RoleChip({ controller, instance }: RoleChipProps) {
   const isMenuOpen = controller.openMenuInstanceId === instance.id;
 
   return (
-    <div className="relative">
+    <div className="relative shrink-0">
       <span
-        className="inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1 text-sm"
+        className="inline-flex max-w-56 items-center gap-1.5 rounded-md border px-2.5 py-1 text-sm"
         style={{
           borderColor: accent.border,
           backgroundColor: accent.bg,
@@ -27,7 +27,7 @@ export function RoleChip({ controller, instance }: RoleChipProps) {
           className="h-1.5 w-1.5 rounded-full"
           style={{ backgroundColor: accent.dot }}
         />
-        {instance.name}
+        <span className="min-w-0 truncate">{instance.name}</span>
         <IconButton
           aria-label={`${instance.name} options`}
           size="sm"
@@ -36,6 +36,7 @@ export function RoleChip({ controller, instance }: RoleChipProps) {
             stopMenuClick(event);
             controller.setIsRolePickerOpen(false);
             controller.setIsRoomMenuOpen(false);
+            controller.setOpenRoomMenuId(null);
             controller.setOpenMenuInstanceId((current) =>
               current === instance.id ? null : instance.id,
             );
@@ -45,15 +46,16 @@ export function RoleChip({ controller, instance }: RoleChipProps) {
         </IconButton>
       </span>
       {isMenuOpen ? (
-        <PopoverPanel className="left-0 w-40" onClick={stopMenuClick}>
+        <PopoverPanel
+          className="left-0 w-40 max-sm:fixed max-sm:inset-x-3 max-sm:top-28 max-sm:w-auto"
+          onClick={stopMenuClick}
+        >
           <MenuItem onClick={() => controller.viewInstanceDetails(instance)}>
             View details
           </MenuItem>
-          {!controller.isPredefinedName(instance.name) ? (
-            <MenuItem onClick={() => controller.startEditInstance(instance)}>
-              Edit
-            </MenuItem>
-          ) : null}
+          <MenuItem onClick={() => controller.startEditInstance(instance)}>
+            Edit
+          </MenuItem>
           <MenuItem
             destructive
             onClick={() => controller.removeInstance(instance.id)}

@@ -36,7 +36,7 @@ export function ChatComposer({ controller }: ChatComposerProps) {
   };
 
   return (
-    <div className="shrink-0 border-t border-border-subtle bg-surface px-5 pb-5 pt-4">
+    <div className="shrink-0 border-t border-border-subtle bg-surface px-3 pb-[calc(env(safe-area-inset-bottom)+1rem)] pt-4 sm:px-5">
       <div className="mx-auto max-w-3xl lg:max-w-4xl">
         {!hasAIInstances ? (
           <p className="mb-3 text-sm text-text-tertiary">
@@ -87,7 +87,7 @@ export function ChatComposer({ controller }: ChatComposerProps) {
 
         <form
           onSubmit={handleSubmit}
-          className="flex gap-3 rounded-lg border border-border-subtle bg-surface p-3"
+          className="flex min-w-0 gap-2 rounded-lg border border-border-subtle bg-surface p-2 sm:gap-3 sm:p-3"
         >
           <input
             value={controller.draft}
@@ -96,7 +96,7 @@ export function ChatComposer({ controller }: ChatComposerProps) {
             disabled={controller.isAutoDiscussing}
             aria-label="Start a topic or reply"
             placeholder="Start a topic or reply..."
-            className="h-11 min-w-0 flex-1 bg-transparent px-2 text-sm outline-none placeholder:text-text-tertiary"
+            className="h-11 min-w-0 flex-1 bg-transparent px-2 text-sm outline-none placeholder:text-text-tertiary focus-visible:ring-2 focus-visible:ring-accent-muted"
           />
           <Button
             type="submit"

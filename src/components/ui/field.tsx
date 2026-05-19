@@ -35,7 +35,7 @@ export function TextInput({
   return (
     <input
       className={cn(
-        "h-9 w-full rounded-md border border-border-subtle bg-background px-3 text-sm outline-none placeholder:text-text-tertiary",
+        "h-11 w-full rounded-md border border-border-subtle bg-background px-3 text-sm outline-none placeholder:text-text-tertiary focus-visible:border-accent focus-visible:ring-2 focus-visible:ring-accent-muted md:h-9",
         className,
       )}
       {...props}
@@ -50,7 +50,7 @@ export function TextArea({
   return (
     <textarea
       className={cn(
-        "w-full resize-none rounded-md border border-border-subtle bg-background px-3 py-2 text-sm outline-none placeholder:text-text-tertiary",
+        "w-full resize-none rounded-md border border-border-subtle bg-background px-3 py-2 text-sm outline-none placeholder:text-text-tertiary focus-visible:border-accent focus-visible:ring-2 focus-visible:ring-accent-muted",
         className,
       )}
       {...props}

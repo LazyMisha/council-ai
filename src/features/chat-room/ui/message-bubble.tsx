@@ -21,7 +21,7 @@ export function MessageBubble({ message }: MessageBubbleProps) {
             <span style={{ color: accent.text }}>{message.role}</span>
           </p>
         ) : null}
-        <p className="text-sm leading-6 text-text-secondary">
+        <p className="text-base leading-7 text-text-secondary md:text-sm md:leading-6">
           {message.content}
         </p>
       </div>

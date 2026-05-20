@@ -38,7 +38,10 @@ export function MessageList({
           {activeRoom.messages.map((message) => {
             if (message.authorType === "system") {
               return (
-                <p key={message.id} className="text-sm text-text-tertiary">
+                <p
+                  key={message.id}
+                  className="text-base text-text-tertiary md:text-sm"
+                >
                   {message.content}
                 </p>
               );
@@ -92,7 +95,7 @@ function PendingIndicator({
   const label = getPendingLabel(pendingAIStatus);
 
   return (
-    <p className="flex items-center gap-2 text-sm text-text-tertiary">
+    <p className="flex items-center gap-2 text-base text-text-tertiary md:text-sm">
       {accent ? (
         <span
           className="h-1.5 w-1.5 rounded-full"

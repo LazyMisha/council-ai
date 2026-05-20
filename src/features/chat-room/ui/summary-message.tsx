@@ -21,7 +21,7 @@ export function SummaryMessage({ message }: SummaryMessageProps) {
           <span className="h-1.5 w-1.5 rounded-full bg-accent" />
           Summary
         </p>
-        <div className="space-y-2 text-sm leading-6 text-text-secondary">
+        <div className="space-y-2 text-base leading-7 text-text-secondary md:text-sm md:leading-6">
           {message.content.split("\n").map((line, index) => {
             const trimmed = line.trim();
             if (!trimmed) return null;

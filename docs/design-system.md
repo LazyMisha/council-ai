@@ -29,11 +29,11 @@ Avoid dashboards, roadmap sections, long landing pages, large marketing blocks, 
 - `surface`: near-white for panels and message bubbles.
 - `surface-muted`: `#e8e6dc`, subtle warm gray.
 - `text-primary`: `#141413`, warm near-black.
-- `text-secondary`: muted warm gray for supporting text.
-- `text-tertiary`: lower-emphasis warm gray.
+- `text-secondary`: `#4b4943`, muted warm gray for supporting text.
+- `text-tertiary`: `#625f58`, lower-emphasis warm gray.
 - `border-subtle`: `#e8e6dc`, light warm gray.
 - `border-strong`: `#b0aea5`, medium warm gray.
-- `accent`: `#d97757`, warm orange for primary actions.
+- `accent`: `#b8563d`, warm orange for primary actions with AA text contrast.
 - `accent-muted`: pale orange tint for summaries or highlights.
 - `info`: `#6a9bcc`, restrained blue for secondary accents.
 - `success`: `#788c5d`, restrained green for positive states.

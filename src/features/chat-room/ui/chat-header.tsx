@@ -52,7 +52,7 @@ export function ChatHeader({ controller, onOpenMobileDrawer }: ChatHeaderProps) 
         <div className="relative flex min-w-0 flex-1 items-center gap-1">
           <IconButton
             aria-label="Open chat room navigation"
-            className="mr-1 md:hidden"
+            className="mr-1 h-12 w-12 rounded-md text-lg md:hidden"
             onClick={onOpenMobileDrawer}
           >
             &#x2630;
@@ -90,18 +90,18 @@ export function ChatHeader({ controller, onOpenMobileDrawer }: ChatHeaderProps) 
           {isMobileAIListOpen ? (
             <div
               aria-label="Added AI instances"
-              className="fixed inset-x-3 top-28 z-50 max-h-[calc(100dvh-8rem)] overflow-y-auto overscroll-contain rounded-md border border-border-subtle bg-surface p-2 shadow-sm"
+              className="fixed inset-x-3 top-28 z-50 max-h-[calc(100dvh-8rem)] overflow-y-auto overscroll-contain rounded-md border border-border-subtle bg-surface p-1 shadow-sm"
               role="region"
               onClick={stopMenuClick}
             >
               {activeRoom.aiInstances.length > 0 ? (
-                <div className="space-y-1">
+                <div className="space-y-0.5">
                   {activeRoom.aiInstances.map((instance) => (
                     <div
                       key={instance.id}
-                      className="rounded-md hover:bg-background"
+                      className="relative rounded-md hover:bg-background"
                     >
-                      <div className="flex min-h-11 items-center gap-2 px-3 py-2">
+                      <div className="flex min-h-11 items-center gap-2 px-2.5 py-1">
                         <button
                           type="button"
                           onClick={() => handleViewInstance(instance)}
@@ -123,7 +123,7 @@ export function ChatHeader({ controller, onOpenMobileDrawer }: ChatHeaderProps) 
                       </div>
                       {controller.openMenuInstanceId === instance.id ? (
                         <div
-                          className="mx-3 mb-2 rounded-md border border-border-subtle bg-surface py-1 shadow-sm"
+                          className="fixed right-5 top-[9.5rem] z-[80] w-44 rounded-md border border-border-subtle bg-surface py-1 shadow-md"
                           onClick={stopMenuClick}
                         >
                           <MenuItem onClick={() => handleViewInstance(instance)}>

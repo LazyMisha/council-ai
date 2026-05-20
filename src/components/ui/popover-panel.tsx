@@ -13,7 +13,7 @@ export function PopoverPanel({
   return (
     <div
       className={cn(
-        "absolute top-full z-10 mt-1 rounded-md border border-border-subtle bg-surface shadow-sm",
+        "absolute top-full z-30 mt-1 rounded-md border border-border-subtle bg-surface shadow-sm",
         width === "md" ? "w-80 p-4" : "w-44 py-1",
         className,
       )}

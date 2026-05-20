@@ -1,9 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import type { MouseEvent } from "react";
 import type { AIInstance } from "../domain/types";
 import type { ChatRoomController } from "../client/use-chat-room-controller";
-import { IconButton, MenuItem } from "@/components/ui";
+import { Button, IconButton, MenuItem } from "@/components/ui";
 import { stopMenuClick } from "./events";
 import { RoleChip } from "./role-chip";
 import { RolePicker } from "./role-picker";
@@ -27,8 +28,6 @@ export function ChatHeader({ controller, onOpenMobileDrawer }: ChatHeaderProps) 
   if (!activeRoom) return null;
 
   const aiInstanceCount = activeRoom.aiInstances.length;
-  const aiInstanceLabel =
-    aiInstanceCount === 1 ? "1 AI instance" : `${aiInstanceCount} AI instances`;
   const closeMobileAIList = () => {
     setIsMobileAIListOpen(false);
     controller.setOpenMenuInstanceId(null);
@@ -46,13 +45,21 @@ export function ChatHeader({ controller, onOpenMobileDrawer }: ChatHeaderProps) 
     closeMobileAIList();
   };
 
+  const toggleRolePicker = (event: MouseEvent<HTMLButtonElement>) => {
+    stopMenuClick(event);
+    controller.setOpenMenuInstanceId(null);
+    controller.setIsRoomMenuOpen(false);
+    setIsMobileAIListOpen(false);
+    controller.setIsRolePickerOpen((open) => !open);
+  };
+
   return (
     <div className="shrink-0 border-b border-border-subtle bg-surface pt-[env(safe-area-inset-top)]">
-      <div className="mx-auto flex max-w-3xl items-center justify-between gap-2 px-3 py-2 sm:px-5 lg:max-w-4xl">
+      <div className="mx-auto flex max-w-3xl items-center gap-2 px-3 py-2 sm:px-5 lg:max-w-4xl">
         <div className="relative flex min-w-0 flex-1 items-center gap-1">
           <IconButton
             aria-label="Open chat room navigation"
-            className="mr-1 h-12 w-12 rounded-md text-lg md:hidden"
+            className="h-12 w-12 rounded-md text-lg md:hidden"
             onClick={(event) => onOpenMobileDrawer(event.currentTarget)}
           >
             &#x2630;
@@ -61,36 +68,25 @@ export function ChatHeader({ controller, onOpenMobileDrawer }: ChatHeaderProps) 
             {activeRoom.title}
           </h2>
         </div>
-      </div>
-      <div className="mx-auto flex max-w-3xl items-center gap-2 px-3 py-3 sm:px-5 lg:max-w-4xl">
-        <div className="-mx-1 hidden min-w-0 flex-1 gap-2 overflow-x-auto px-1 pb-1 sm:flex sm:flex-wrap sm:overflow-visible sm:pb-0">
-          {activeRoom.aiInstances.map((instance) => (
-            <RoleChip
-              key={instance.id}
-              controller={controller}
-              instance={instance}
-            />
-          ))}
-        </div>
-        <div className="relative min-w-0 flex-1 sm:hidden">
-          <button
-            type="button"
+        <div className="relative min-w-0 sm:hidden">
+          <Button
             aria-expanded={isMobileAIListOpen}
             aria-label="Show added AI instances"
+            variant="primary"
             onClick={(event) => {
               stopMenuClick(event);
               controller.setOpenMenuInstanceId(null);
               controller.setIsRolePickerOpen(false);
               setIsMobileAIListOpen((open) => !open);
             }}
-            className="h-11 w-full min-w-0 truncate rounded-md border border-border-subtle bg-background px-3 text-left text-sm font-medium text-text-secondary hover:bg-surface-muted focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent cursor-pointer"
+            className="h-11 min-w-14 max-w-20 px-2.5 md:h-9"
           >
-            {aiInstanceLabel}
-          </button>
+            {aiInstanceCount} AI
+          </Button>
           {isMobileAIListOpen ? (
             <div
               aria-label="Added AI instances"
-              className="fixed inset-x-3 top-28 z-50 max-h-[calc(100dvh-8rem)] overflow-y-auto overscroll-contain rounded-md border border-border-subtle bg-surface p-1 shadow-sm"
+              className="fixed inset-x-3 top-[calc(4rem+env(safe-area-inset-top))] z-50 max-h-[calc(100dvh-5rem)] overflow-y-auto overscroll-contain rounded-md border border-border-subtle bg-surface p-1 shadow-sm"
               role="region"
               onClick={stopMenuClick}
             >
@@ -123,7 +119,7 @@ export function ChatHeader({ controller, onOpenMobileDrawer }: ChatHeaderProps) 
                       </div>
                       {controller.openMenuInstanceId === instance.id ? (
                         <div
-                          className="fixed right-5 top-[9.5rem] z-[80] w-44 rounded-md border border-border-subtle bg-surface py-1 shadow-md"
+                          className="fixed right-5 top-[calc(5.5rem+env(safe-area-inset-top))] z-[80] w-44 rounded-md border border-border-subtle bg-surface py-1 shadow-md"
                           onClick={stopMenuClick}
                         >
                           <MenuItem onClick={() => handleViewInstance(instance)}>
@@ -152,27 +148,33 @@ export function ChatHeader({ controller, onOpenMobileDrawer }: ChatHeaderProps) 
           ) : null}
         </div>
         <div className="relative shrink-0">
-          <button
-            type="button"
-            onClick={(event) => {
-              stopMenuClick(event);
-              controller.setOpenMenuInstanceId(null);
-              controller.setIsRoomMenuOpen(false);
-              setIsMobileAIListOpen(false);
-              controller.setIsRolePickerOpen((open) => !open);
-            }}
-            className="h-11 whitespace-nowrap rounded-md border border-accent bg-surface px-3 text-sm font-medium text-accent hover:bg-accent-muted focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent md:h-9 cursor-pointer"
+          <Button
+            aria-label="+ Add AI"
+            variant="primary"
+            onClick={toggleRolePicker}
+            className="h-11 md:h-9"
           >
             + Add AI
-          </button>
+          </Button>
           {controller.isRolePickerOpen ? (
             <div
-              className="fixed inset-x-3 top-28 z-50 max-h-[calc(100dvh-9rem)] overflow-y-auto overscroll-contain rounded-md border border-border-subtle bg-surface p-4 shadow-sm sm:absolute sm:inset-auto sm:right-0 sm:top-10 sm:mt-0 sm:max-h-[calc(100dvh-8rem)] sm:w-80"
+              className="fixed inset-x-3 top-[calc(4rem+env(safe-area-inset-top))] z-50 max-h-[calc(100dvh-5rem)] overflow-y-auto overscroll-contain rounded-md border border-border-subtle bg-surface p-4 shadow-sm sm:absolute sm:inset-auto sm:right-0 sm:top-10 sm:mt-0 sm:max-h-[calc(100dvh-8rem)] sm:w-80"
               onClick={stopMenuClick}
             >
               <RolePicker controller={controller} />
             </div>
           ) : null}
+        </div>
+      </div>
+      <div className="mx-auto hidden max-w-3xl items-center gap-2 px-3 pb-3 sm:flex sm:px-5 lg:max-w-4xl">
+        <div className="-mx-1 flex min-w-0 flex-1 flex-wrap gap-2 overflow-visible px-1">
+          {activeRoom.aiInstances.map((instance) => (
+            <RoleChip
+              key={instance.id}
+              controller={controller}
+              instance={instance}
+            />
+          ))}
         </div>
       </div>
     </div>

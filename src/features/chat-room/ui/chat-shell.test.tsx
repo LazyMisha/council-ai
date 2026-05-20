@@ -84,7 +84,7 @@ describe("ChatShell", () => {
     expect(screen.getByText("+ Add AI")).toBeInTheDocument();
   });
 
-  it("shows a compact AI instance count and expands the mobile AI list", async () => {
+  it("shows a compact AI count in the mobile header and expands the mobile AI list", async () => {
     seedChatRooms([
       {
         id: "room-1",
@@ -107,7 +107,7 @@ describe("ChatShell", () => {
     render(<ChatShell />);
 
     await waitFor(() => {
-      expect(screen.getByText("2 AI instances")).toBeInTheDocument();
+      expect(screen.getByText("2 AI")).toBeInTheDocument();
     });
 
     fireEvent.click(
@@ -153,7 +153,7 @@ describe("ChatShell", () => {
     render(<ChatShell />);
 
     await waitFor(() => {
-      expect(screen.getByText("1 AI instance")).toBeInTheDocument();
+      expect(screen.getByText("1 AI")).toBeInTheDocument();
     });
 
     fireEvent.click(
@@ -192,7 +192,7 @@ describe("ChatShell", () => {
     render(<ChatShell />);
 
     await waitFor(() => {
-      expect(screen.getByText("1 AI instance")).toBeInTheDocument();
+      expect(screen.getByText("1 AI")).toBeInTheDocument();
     });
 
     fireEvent.click(
@@ -245,7 +245,7 @@ describe("ChatShell", () => {
     render(<ChatShell />);
 
     await waitFor(() => {
-      expect(screen.getByText("2 AI instances")).toBeInTheDocument();
+      expect(screen.getByText("2 AI")).toBeInTheDocument();
     });
 
     fireEvent.click(
@@ -259,7 +259,7 @@ describe("ChatShell", () => {
     );
     fireEvent.click(within(mobileAIList).getByText("Remove"));
 
-    expect(screen.getByText("1 AI instance")).toBeInTheDocument();
+    expect(screen.getByText("1 AI")).toBeInTheDocument();
   });
 
   it("shows a mobile chat room navigation button when a room is active", () => {
@@ -426,12 +426,124 @@ describe("ChatShell", () => {
     });
     fireEvent.keyDown(input, { key: "Enter" });
 
-    expect(screen.queryByText("Should we launch?")).not.toBeInTheDocument();
+    expect(screen.queryAllByText("Should we launch?")).toHaveLength(1);
 
     fireEvent.click(screen.getByRole("button", { name: "+ Add AI" }));
     fireEvent.click(screen.getByText("Software Architect"));
 
     expect(sendButton).not.toBeDisabled();
+  });
+
+  it("sends with Enter on desktop", async () => {
+    seedChatRooms([
+      {
+        id: "room-1",
+        title: "Launch Plan",
+        aiInstances: [
+          {
+            id: "architect",
+            name: "Software Architect",
+            instructions: "Focus on technical feasibility.",
+          },
+        ],
+      },
+    ]);
+    vi.spyOn(global, "fetch").mockImplementation(
+      () => new Promise<Response>(() => {}),
+    );
+
+    render(<ChatShell />);
+
+    await waitFor(() => {
+      expect(screen.getByLabelText("Start a topic or reply")).toBeInTheDocument();
+    });
+
+    const input = screen.getByLabelText("Start a topic or reply");
+
+    fireEvent.change(input, {
+      target: { value: "Should we launch?" },
+    });
+    fireEvent.keyDown(input, { key: "Enter" });
+
+    await waitFor(() => {
+      expect(screen.getAllByText("Should we launch?").length).toBeGreaterThan(1);
+    });
+  });
+
+  it("keeps Shift+Enter as a newline shortcut on desktop", async () => {
+    seedChatRooms([
+      {
+        id: "room-1",
+        title: "Launch Plan",
+        aiInstances: [
+          {
+            id: "architect",
+            name: "Software Architect",
+            instructions: "Focus on technical feasibility.",
+          },
+        ],
+      },
+    ]);
+    const fetchSpy = vi.spyOn(global, "fetch");
+
+    render(<ChatShell />);
+
+    await waitFor(() => {
+      expect(screen.getByLabelText("Start a topic or reply")).toBeInTheDocument();
+    });
+
+    const input = screen.getByLabelText("Start a topic or reply");
+
+    fireEvent.change(input, {
+      target: { value: "First line" },
+    });
+    fireEvent.keyDown(input, { key: "Enter", shiftKey: true });
+
+    expect(screen.queryAllByText("First line")).toHaveLength(1);
+    expect(fetchSpy).not.toHaveBeenCalled();
+  });
+
+  it("keeps Enter available for new lines on mobile keyboards", async () => {
+    window.matchMedia = vi.fn().mockImplementation((query: string) => ({
+      matches: true,
+      media: query,
+      onchange: null,
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+      addListener: vi.fn(),
+      removeListener: vi.fn(),
+      dispatchEvent: vi.fn(),
+    }));
+    seedChatRooms([
+      {
+        id: "room-1",
+        title: "Launch Plan",
+        aiInstances: [
+          {
+            id: "architect",
+            name: "Software Architect",
+            instructions: "Focus on technical feasibility.",
+          },
+        ],
+      },
+    ]);
+    const fetchSpy = vi.spyOn(global, "fetch");
+
+    render(<ChatShell />);
+
+    await waitFor(() => {
+      expect(window.matchMedia).toHaveBeenCalledWith("(max-width: 767px)");
+    });
+
+    const input = screen.getByLabelText("Start a topic or reply");
+
+    fireEvent.change(input, {
+      target: { value: "First line" },
+    });
+    fireEvent.keyDown(input, { key: "Enter" });
+
+    expect(screen.queryAllByText("First line")).toHaveLength(1);
+    expect(fetchSpy).not.toHaveBeenCalled();
   });
 
   it("shows speaker selection and role-specific thinking states", async () => {

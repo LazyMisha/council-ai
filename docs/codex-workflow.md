@@ -16,10 +16,6 @@ Do not assume Prisma, Supabase, or OpenAI integration exists until those files a
 - Avoid dashboards, long landing pages, roadmap UI, and excessive cards.
 - Update docs when product behavior or terminology changes.
 
-## Context7 MCP Workflow
-
-Use Context7 MCP for fresh library documentation when implementing Next.js App Router, React, Tailwind, Prisma, Supabase, OpenAI SDK, or testing-library-specific code.
-
 ## Build Order
 
 1. Persist chat rooms, AI instances, messages, and syntheses.

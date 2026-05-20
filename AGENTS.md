@@ -39,7 +39,7 @@ The app currently has a Claude/ChatGPT-like layout: left sidebar, central chat r
 - Keep OpenAI calls outside React components; use server-only modules, server actions, or route handlers.
 - Treat AI outputs as structured domain data.
 - Keep UI minimal: no large dashboards, long marketing pages, roadmap sections, or excessive cards.
-- When implementing library-specific code, check fresh docs through Context7 MCP if available.
+- Check fresh third-party docs when library-specific behavior matters.
 - Add tests around orchestration, validation, data transformations, and role/template logic.
 
 ## Automatic Project Skill Use
@@ -54,6 +54,11 @@ Prefer:
 - `frontend-design`, `web-design-guidelines`, and `ui-ux-pro-max` for UI, layout, interaction, and design review tasks.
 - `brand-guidelines` for Anthropic-inspired palette, typography, and visual direction tasks.
 - `improve-codebase-architecture` for architecture, refactors, interfaces, and module boundaries.
+- `code-simplifier` for the simplification pass after meaningful implementation changes.
+- `unit-tests-creator` when meaningful logic or orchestration changes are added.
+- `quality-gate` before finishing meaningful implementation work.
+
+Do not wait for the user to name these explicitly when the task matches.
 
 ## Product Constraints
 
@@ -77,12 +82,11 @@ Prefer:
 
 After every meaningful implementation:
 
-1. Simplify the changed code before finishing.
-2. Remove unused code, duplicated logic, and unnecessary abstractions.
-3. Run `npm run quality` when available.
+1. Run a simplification pass and remove unused code, duplicated logic, and unnecessary abstractions.
+2. Use `code-simplifier`, `unit-tests-creator`, and `quality-gate` when relevant instead of redoing their guidance manually.
+3. Add or update tests when new logic, orchestration, or data transformation behavior was added.
 4. Mention which checks passed and which were skipped.
-5. If logic was added, consider adding unit tests.
-6. Do not add new dependencies without explaining why.
+5. Do not add new dependencies without explaining why.
 
 ## Documentation Rules
 
@@ -112,5 +116,3 @@ Rules:
 - For cross-module "how does X relate to Y" questions, prefer `graphify query "<question>"`, `graphify path "<A>" "<B>"`, or `graphify explain "<concept>"` over grep — these traverse the graph's EXTRACTED + INFERRED edges instead of scanning files
 - Run `graphify update .` after changes that affect file structure, imports/exports, domain logic, orchestration, or cross-module relationships.
 - Skip `graphify update .` for small local UI, test, copy, config, or styling changes where graph structure is unchanged; mention when skipped.
-
-@RTK.md

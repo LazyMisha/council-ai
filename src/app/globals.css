@@ -70,8 +70,67 @@ html {
   scroll-behavior: smooth;
 }
 
+@keyframes chat-drawer-backdrop-enter {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes chat-drawer-backdrop-exit {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes chat-drawer-panel-enter {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+@keyframes chat-drawer-panel-exit {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-100%);
+  }
+}
+
+.chat-drawer-backdrop-enter {
+  animation: chat-drawer-backdrop-enter 180ms ease-out both;
+}
+
+.chat-drawer-backdrop-exit {
+  animation: chat-drawer-backdrop-exit 180ms ease-in both;
+}
+
+.chat-drawer-panel-enter {
+  animation: chat-drawer-panel-enter 220ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.chat-drawer-panel-exit {
+  animation: chat-drawer-panel-exit 180ms cubic-bezier(0.4, 0, 1, 1) both;
+}
+
 @media (prefers-reduced-motion: reduce) {
   html {
     scroll-behavior: auto;
+  }
+
+  .chat-drawer-backdrop-enter,
+  .chat-drawer-backdrop-exit,
+  .chat-drawer-panel-enter,
+  .chat-drawer-panel-exit {
+    animation: none;
   }
 }

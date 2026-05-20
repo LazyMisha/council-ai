@@ -299,6 +299,37 @@ describe("ChatShell", () => {
     expect(within(drawer).getByText("Pricing Review")).toBeInTheDocument();
   });
 
+  it("moves focus out before closing the mobile drawer", async () => {
+    seedChatRooms([{ id: "room-1", title: "Launch Plan" }]);
+
+    render(<ChatShell />);
+
+    await waitFor(() => {
+      expect(
+        screen.getByRole("heading", { name: "Launch Plan" }),
+      ).toBeInTheDocument();
+    });
+
+    const openNavigationButton = screen.getByRole("button", {
+      name: "Open chat room navigation",
+    });
+
+    fireEvent.click(openNavigationButton);
+
+    const closeNavigationButton = within(getMobileDrawer()).getByRole(
+      "button",
+      { name: "Close chat room navigation" },
+    );
+    closeNavigationButton.focus();
+
+    fireEvent.click(closeNavigationButton);
+
+    expect(openNavigationButton).toHaveFocus();
+    expect(
+      screen.queryByRole("button", { name: "Close chat room navigation" }),
+    ).not.toBeInTheDocument();
+  });
+
   it("selects a room from the mobile drawer and closes it", async () => {
     seedChatRooms([
       { id: "room-1", title: "Launch Plan" },
@@ -629,6 +660,52 @@ describe("ChatShell", () => {
       expect(screen.queryByText("Continue discussion")).not.toBeInTheDocument();
       expect(screen.getByText("Auto-discuss")).toBeInTheDocument();
     });
+  });
+
+  it("collapses and expands a summary message", async () => {
+    const roomWithSummary = {
+      id: "room-1",
+      title: "Test Room",
+      aiInstances: [
+        { id: "ai-1", name: "Skeptic", instructions: "Focus on risks." },
+      ],
+      messages: [
+        { id: "msg-1", authorType: "user", content: "Hello" },
+        {
+          id: "msg-summary",
+          authorType: "summary",
+          role: "Summary",
+          content:
+            "Short answer: be careful.\nKey points: integration risk is high.",
+        },
+      ],
+      canSummarize: false,
+    };
+
+    window.localStorage.setItem(
+      "council-ai-chat-rooms",
+      JSON.stringify({
+        chatRooms: [roomWithSummary],
+        activeRoomId: "room-1",
+      }),
+    );
+
+    render(<ChatShell />);
+
+    await waitFor(() => {
+      expect(screen.getByText("be careful.")).toBeInTheDocument();
+    });
+
+    expect(
+      screen.queryByText("integration risk is high."),
+    ).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Expand" }));
+
+    expect(screen.getByText("integration risk is high.")).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Collapse" }),
+    ).toHaveAttribute("aria-expanded", "true");
   });
 
   it("shows Send after a summary exists", async () => {

@@ -25,7 +25,7 @@ export function Dialog({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/20 px-4 py-[max(1rem,env(safe-area-inset-top))] sm:py-16"
+      className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black/20 px-4 py-[max(1rem,env(safe-area-inset-top))] sm:py-8"
       onClick={onClose}
     >
       <div

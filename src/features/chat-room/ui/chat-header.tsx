@@ -10,7 +10,7 @@ import { RolePicker } from "./role-picker";
 
 type ChatHeaderProps = {
   controller: ChatRoomController;
-  onOpenMobileDrawer: () => void;
+  onOpenMobileDrawer: (opener: HTMLElement) => void;
 };
 
 export function ChatHeader({ controller, onOpenMobileDrawer }: ChatHeaderProps) {
@@ -53,7 +53,7 @@ export function ChatHeader({ controller, onOpenMobileDrawer }: ChatHeaderProps) 
           <IconButton
             aria-label="Open chat room navigation"
             className="mr-1 h-12 w-12 rounded-md text-lg md:hidden"
-            onClick={onOpenMobileDrawer}
+            onClick={(event) => onOpenMobileDrawer(event.currentTarget)}
           >
             &#x2630;
           </IconButton>

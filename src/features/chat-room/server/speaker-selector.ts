@@ -28,6 +28,7 @@ export async function selectSpeaker({
       model: chatRoomModel,
       instructions: buildSelectorInstructions(),
       input: buildSelectorInput({ aiInstances, recentMessages }),
+      max_output_tokens: 80,
     });
 
     const content = response.output_text.trim();
@@ -64,7 +65,13 @@ function buildSelectorInstructions(): string {
     "- Who can address unresolved disagreement",
     "- Who can challenge weak assumptions",
     "- Who can move the discussion toward a useful conclusion",
+    "- Who should naturally reply to the latest participant, not only the original user topic",
+    "- Who can create realistic back-and-forth between participants",
+    "- Who can add disagreement, refinement, or continuation over isolated advice",
     "- Avoid selecting an AI instance that would likely repeat previous points",
+    "- Avoid selecting a role only because it can answer the user's original question",
+    "- Avoid selecting a role that would produce a generic standalone answer",
+    "- Prefer a role that can move the room discussion forward",
     "",
     "Important rules:",
     "- Do not select the same AI instance that spoke last if another AI instance can contribute.",

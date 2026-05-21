@@ -27,6 +27,7 @@ export async function generateSummary({
       model: chatRoomModel,
       instructions: buildSummaryInstructions(),
       input: buildSummaryInput({ messages: recentMessages }),
+      max_output_tokens: 220,
     });
 
     const content = response.output_text.trim();
@@ -62,21 +63,26 @@ function createMockSummary(messages: Message[]) {
     .filter((message) => message.authorType === "ai" && message.role)
     .map((message) => message.role);
   const uniqueRoles = Array.from(new Set(aiRoles));
-  const roleList = uniqueRoles.length > 0 ? uniqueRoles.join(", ") : "the AI instances";
+  const roleList =
+    uniqueRoles.length > 0 ? uniqueRoles.join(", ") : "the AI instances";
+  const recentPoints = messages
+    .filter((message) => message.authorType === "ai")
+    .slice(-3)
+    .map((message) => compactPoint(message.content));
+  const why =
+    recentPoints.length > 0
+      ? recentPoints.join(" ")
+      : "The room has not added enough concrete input yet.";
 
   return [
-    `Short answer: The discussion on "${userTopic}" surfaced useful input from ${roleList}, but the best path depends on a few key constraints.`,
-    "Key points:",
-    "- Start with the smallest viable scope.",
-    "- Validate assumptions early.",
-    "- Identify the riskiest dependency before committing.",
-    "Tradeoffs:",
-    "- Speed of launch versus depth of validation.",
-    "- Some participants favor momentum; others want more certainty before acting.",
-    "Recommendation: Define the smallest experiment that tests the core assumption, then decide whether to scale based on evidence.",
-    "Next steps:",
-    "- Assign ownership for the experiment.",
-    "- Set a short review date.",
-    "- Agree on what success looks like before starting.",
+    `Decision: Not settled yet for "${compactPoint(userTopic)}".`,
+    `Why: ${roleList} contributed. ${why}`,
+    "Open risks: Any unresolved risks are the ones named above.",
+    "Next move: Choose the clearest point above and act on it.",
   ].join("\n");
+}
+
+function compactPoint(content: string) {
+  const words = content.trim().replace(/\s+/g, " ").split(" ");
+  return words.slice(0, 18).join(" ");
 }

@@ -45,7 +45,7 @@ describe("generateAIResponses", () => {
     expect(result.messages).toHaveLength(1);
     expect(result.messages[0].authorType).toBe("ai");
     expect(result.messages[0].role).toBe("Skeptic");
-    expect(result.messages[0].content).toContain("tested the critical path");
+    expect(result.messages[0].content).toContain("critical path");
   });
 
   it("does not generate AI messages when no AI instances exist", async () => {
@@ -239,11 +239,17 @@ describe("generateAIResponses", () => {
 
     const responseCall = openAIResponsesCreate.mock.calls[0][0];
     expect(responseCall.instructions).toContain(
-      "Continue the existing chat-room discussion",
+      "Continue the existing room discussion",
     );
     expect(responseCall.input).toContain("Software Architect: Start small.");
-    expect(responseCall.input).toContain("Do not wait for a new user message.");
+    expect(responseCall.input).toContain(
+      "Continue the discussion with the other participants",
+    );
+    expect(responseCall.input).toContain(
+      "Do not ask the user a follow-up question",
+    );
     expect(responseCall.input).not.toContain("Latest user message:");
+    expect(responseCall.max_output_tokens).toBe(90);
   });
 
   it("selects a single AI instance for continue mode when multiple instances exist", async () => {
@@ -405,6 +411,7 @@ describe("generateAIResponses", () => {
       "Business Analyst: Validate market first.",
     );
     expect(responseCall.input).toContain("Should we launch?");
+    expect(responseCall.max_output_tokens).toBe(90);
   });
 
   it("skips selector call when only one AI instance exists in continue mode", async () => {

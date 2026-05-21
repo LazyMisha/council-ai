@@ -5,12 +5,12 @@ describe("summary prompts", () => {
   it("keeps the summarizer structured but concise", () => {
     const instructions = buildSummaryInstructions();
 
-    expect(instructions).toContain("Keep the whole summary under 180 words");
-    expect(instructions).toContain("Short answer: 1-2 sentences");
-    expect(instructions).toContain("Key points: max 3 bullets");
-    expect(instructions).toContain("Tradeoffs: max 2 bullets");
-    expect(instructions).toContain("Recommendation: 1-2 sentences");
-    expect(instructions).toContain("Next steps: max 3 bullets");
+    expect(instructions).toContain("Keep the whole summary under 120 words");
+    expect(instructions).toContain("Decision: 1 short line");
+    expect(instructions).toContain("Why: 1-2 short lines");
+    expect(instructions).toContain("Open risks: 1-2 short lines");
+    expect(instructions).toContain("Next move: 1 short line");
+    expect(instructions).toContain("If the discussion is weak, say so plainly");
     expect(instructions).toContain("Do not repeat every message");
   });
 
@@ -28,8 +28,8 @@ describe("summary prompts", () => {
     const input = buildSummaryInput({ messages });
 
     expect(input).toContain("Skeptic: The approval path is unclear.");
-    expect(input).toContain("Short answer");
-    expect(input).toContain("Next steps");
+    expect(input).toContain("Decision");
+    expect(input).toContain("Next move");
     expect(input).not.toContain("Assumptions");
   });
 });

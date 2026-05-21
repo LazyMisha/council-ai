@@ -57,6 +57,24 @@ describe("cleanAIOutput", () => {
     expect(result).toBe("This is risky.");
   });
 
+  it("trims AI-ish opening filler", () => {
+    const result = cleanAIOutput(
+      "Skeptic",
+      "Certainly, as an AI, it is important to note that this is risky.",
+    );
+
+    expect(result).toBe("this is risky.");
+  });
+
+  it("trims AI-ish closing filler", () => {
+    const result = cleanAIOutput(
+      "Skeptic",
+      "This path still has approval risk. Overall.",
+    );
+
+    expect(result).toBe("This path still has approval risk.");
+  });
+
   it("does not remove useful content when no filler is present", () => {
     const result = cleanAIOutput(
       "Skeptic",
@@ -78,15 +96,16 @@ describe("cleanAIOutput", () => {
     const longText = longSentence.repeat(60); // ~1200 words
     const result = cleanAIOutput("Skeptic", longText.trim());
     const words = result.split(/\s+/).filter((w) => w.length > 0);
-    expect(words.length).toBeLessThanOrEqual(110);
+    expect(words.length).toBeLessThanOrEqual(55);
     expect(result.endsWith(".")).toBe(true);
   });
 
-  it("does not break mid-sentence when no clean boundary exists", () => {
+  it("hard-truncates long single sentences without leaving raw fragments", () => {
     const singleLongSentence =
       "A very long sentence without breaks that goes on and on with many words repeated over and over again in a continuous stream of text that never stops and just keeps going forever and ever without any punctuation marks to separate thoughts or ideas so it is basically one massive block of text that would be hard to read".repeat(3);
     const result = cleanAIOutput("Skeptic", singleLongSentence);
-    // No clean sentence boundary, so it should return as-is
-    expect(result).toBe(singleLongSentence);
+    const words = result.split(/\s+/).filter((w) => w.length > 0);
+    expect(words.length).toBeLessThanOrEqual(55);
+    expect(result.endsWith(".")).toBe(true);
   });
 });

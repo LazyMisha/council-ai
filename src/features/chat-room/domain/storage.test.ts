@@ -277,7 +277,7 @@ describe("loadStorageState", () => {
 
     expect(state.chatRooms[0].aiInstances[0].name).toBe("Skeptic");
     expect(state.chatRooms[0].aiInstances[0].instructions).toContain(
-      "risks",
+      "weak assumptions",
     );
   });
 

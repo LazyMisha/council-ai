@@ -118,7 +118,11 @@ describe("detectFinish", () => {
       "only decide whether summarization is available",
     );
     expect(call.instructions).toContain("Do not generate visible chat content, status copy, or summary text");
+    expect(call.instructions).toContain("at least two different AI roles contributed");
+    expect(call.instructions).toContain("at least one participant reacted to another participant");
+    expect(call.instructions).toContain("roles gave isolated answers to the user");
     expect(call.instructions).toContain("Keep reason under 12 words");
+    expect(call.max_output_tokens).toBe(80);
   });
 
   it("ignores unknown statuses from OpenAI and falls back", async () => {
@@ -135,7 +139,7 @@ describe("detectFinish", () => {
 });
 
 describe("fallbackDetectFinish", () => {
-  it("returns continue_discussion when fewer than 3 AI messages exist", () => {
+  it("returns continue_discussion when fewer than 5 AI messages exist", () => {
     const messages: Message[] = [
       { id: "msg-1", authorType: "user", content: "Hello" },
       { id: "msg-2", authorType: "ai", role: "Skeptic", content: "Risky." },
@@ -147,18 +151,36 @@ describe("fallbackDetectFinish", () => {
     expect(result.reason).toContain("shallow");
   });
 
-  it("returns ready_to_summarize when 3 or more AI messages exist", () => {
+  it("returns continue_discussion when fewer than 3 roles have contributed", () => {
+    const messages: Message[] = [
+      { id: "msg-1", authorType: "user", content: "Hello" },
+      { id: "msg-2", authorType: "ai", role: "Skeptic", content: "A" },
+      { id: "msg-3", authorType: "ai", role: "Optimist", content: "B" },
+      { id: "msg-4", authorType: "ai", role: "Skeptic", content: "C" },
+      { id: "msg-5", authorType: "ai", role: "Optimist", content: "D" },
+      { id: "msg-6", authorType: "ai", role: "Skeptic", content: "E" },
+    ];
+
+    const result = fallbackDetectFinish(messages);
+
+    expect(result.status).toBe("continue_discussion");
+    expect(result.reason).toContain("distinct AI roles");
+  });
+
+  it("returns ready_to_summarize after 5 AI messages from 3 roles", () => {
     const messages: Message[] = [
       { id: "msg-1", authorType: "user", content: "Hello" },
       { id: "msg-2", authorType: "ai", role: "Skeptic", content: "A" },
       { id: "msg-3", authorType: "ai", role: "Optimist", content: "B" },
       { id: "msg-4", authorType: "ai", role: "Critic", content: "C" },
+      { id: "msg-5", authorType: "ai", role: "Skeptic", content: "D" },
+      { id: "msg-6", authorType: "ai", role: "Optimist", content: "E" },
     ];
 
     const result = fallbackDetectFinish(messages);
 
     expect(result.status).toBe("ready_to_summarize");
-    expect(result.reason).toContain("Multiple AI");
+    expect(result.reason).toContain("distinct roles");
   });
 
   it("returns continue_discussion when no AI messages exist", () => {

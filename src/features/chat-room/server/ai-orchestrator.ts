@@ -85,6 +85,7 @@ export async function generateAIResponses({
           recentMessages: workingMessages,
           mode,
         }),
+        max_output_tokens: 90,
       });
 
       const content = cleanAIOutput(
@@ -206,6 +207,7 @@ export async function* streamAIResponse({
         recentMessages: workingMessages,
         mode,
       }),
+      max_output_tokens: 90,
       stream: true,
     });
 

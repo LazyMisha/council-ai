@@ -5,6 +5,10 @@ import type { Message } from "../domain/types";
 import { cn } from "@/components/ui/class-names";
 
 const summaryLabels = [
+  "Decision",
+  "Why",
+  "Open risks",
+  "Next move",
   "Short answer",
   "Key points",
   "Main disagreements / tradeoffs",

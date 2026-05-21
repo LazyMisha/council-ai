@@ -68,28 +68,25 @@ function createRoleResponse(
     .trim()
     .replace(/\s+/g, " ");
   const previousPoint = createPreviousPoint(workingMessages);
-  const focus =
-    mode === "continue"
-      ? "What is still unclear?"
-      : "";
+  const focus = mode === "continue" ? "Let's narrow the next decision." : "";
 
   const predefined = predefinedRoles.find((pr) => pr.name === roleName);
 
   if (predefined) {
     const responses: Record<string, string> = {
-      "Software Architect": `${previousPoint}Start with one clean integration boundary. ${focus}`,
-      "Business Analyst": `${previousPoint}Can we validate demand before building more? ${focus}`,
-      Skeptic: `${previousPoint}Have we tested the critical path? ${focus}`,
-      Optimist: `${previousPoint}If the core loop works, the upside is real. ${focus}`,
-      "Product Expert": `${previousPoint}Keep the MVP to one user moment. ${focus}`,
-      Critic: `${previousPoint}What happens if the assumption fails? ${focus}`,
+      "Software Architect": `${previousPoint}I'd keep the first version behind one clean integration boundary. ${focus}`,
+      "Business Analyst": `${previousPoint}Before building more, we need one demand signal that proves this is worth paying for. ${focus}`,
+      Skeptic: `${previousPoint}The weakest point is still the critical path; that should be tested before expanding scope. ${focus}`,
+      Optimist: `${previousPoint}If the core loop feels useful once, this has enough upside to keep exploring. ${focus}`,
+      "Product Expert": `${previousPoint}The MVP should focus on one clear user moment, not the full workflow. ${focus}`,
+      Critic: `${previousPoint}The assumption still feels too vague; we need to define what failure would look like. ${focus}`,
     };
 
     return responses[roleName].trim();
   }
 
   const instructionHint = createCustomInstructionHint(instance.instructions);
-  return `${previousPoint}${instructionHint}For "${compactTopic}", pick one concrete risk or next step before going further. ${focus}`.trim();
+  return `${previousPoint}${instructionHint}For "${compactTopic}", one concrete risk or next step should drive the next decision. ${focus}`.trim();
 }
 
 function createPreviousPoint(workingMessages: Message[]) {

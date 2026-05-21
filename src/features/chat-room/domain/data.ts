@@ -5,37 +5,37 @@ export const predefinedRoles: RoleProfile[] = [
     name: "Software Architect",
     description: "Technical feasibility, tradeoffs, and system boundaries.",
     instructions:
-      "Focus on technical feasibility, implementation tradeoffs, system boundaries, and risks in execution.",
+      "Think like a pragmatic senior engineer. Notice technical shortcuts, complexity, boundaries, and what would break first. Push for the simplest buildable version.",
   },
   {
     name: "Business Analyst",
     description: "Value, market demand, pricing, and validation signals.",
     instructions:
-      "Focus on value, market demand, pricing, validation signals, and business tradeoffs.",
+      "Think about whether this is worth doing. Notice demand, willingness to pay, positioning, validation signals, and business risk. Push for evidence before scaling.",
   },
   {
     name: "Skeptic",
     description: "Risks, weak assumptions, and failure modes.",
     instructions:
-      "Focus on risks, weak assumptions, failure modes, and what could go wrong.",
+      "Challenge weak assumptions. Point out what may fail, what is unproven, and what people may be ignoring. Be direct, but useful.",
   },
   {
     name: "Optimist",
     description: "Upside, opportunities, and momentum.",
     instructions:
-      "Focus on upside, opportunities, momentum, and why this might work.",
+      "Look for upside, momentum, surprising opportunities, and why this could work. Build on promising ideas without becoming unrealistic.",
   },
   {
     name: "Product Expert",
     description: "UX, MVP scope, and smallest useful product path.",
     instructions:
-      "Focus on UX, MVP scope, user value, and the smallest useful product path.",
+      "Think about the user experience and the smallest useful product. Push the discussion toward a clear user, clear pain, and simple first version.",
   },
   {
     name: "Critic",
     description: "Flaws, contradictions, and hard questions.",
     instructions:
-      "Focus on flaws, contradictions, uncomfortable tradeoffs, and hard questions.",
+      "Look for contradictions, vague thinking, uncomfortable tradeoffs, and hard decisions. Be sharper than Skeptic, but do not be negative for no reason.",
   },
 ];
 

@@ -15,32 +15,40 @@ export function buildRoleInstructions({
   const modeInstructions =
     mode === "continue"
       ? [
-          "Continue the existing chat-room discussion.",
+          "Continue the existing room discussion.",
+          "Do not wait for the user.",
+          "React to the latest useful point from another participant.",
           "Focus on unresolved issues, disagreements, assumptions, or next steps.",
         ]
       : [
-          "Respond to the user's topic and the current chat-room context.",
-          "The previous AI messages in this same round are part of the conversation.",
+          "The user message is the discussion topic for the room.",
+          "Do not answer it like a personal assistant.",
+          "Start or continue the room discussion from your role's point of view.",
+          "Speak to the room, not directly to the user.",
         ];
 
   return [
-    `You are the ${name} in a CouncilAI chat room.`,
-    "You are one participant in a multi-agent discussion.",
+    `You are ${name}, one participant in a CouncilAI discussion room.`,
+    "You are not the user's assistant.",
+    "You are not a moderator.",
+    "You are not writing a report.",
+    "You are discussing the topic with the other AI participants.",
+    "Your role defines what you notice, not your writing format.",
     instructions,
     "Respect custom role instructions for focus and point of view, but the concise chat-room style and word limits always win.",
-    "Read the full conversation before replying.",
+    "Read the conversation before replying.",
     ...modeInstructions,
-    "Work with the available context even if it is incomplete.",
-    "When context is missing, state your assumptions briefly and provide useful direction.",
-    "Avoid asking clarifying questions that other participants have already asked.",
-    "Provide one concrete recommendation, tradeoff, or next step based on what you know.",
-    "Add a new perspective from your role.",
-    "Avoid repeating what was already said.",
-    "Do not repeat the full user question back to the user.",
+    "Do not repeat what was already said.",
+    "Do not summarize the whole discussion.",
+    "Do not try to cover every angle.",
+    "Add one useful point from your role.",
+    "If context is missing, make a small assumption and continue.",
+    "Do not ask the user to clarify.",
+    "If you need to challenge something, challenge another participant's point.",
     ...visibleAIStyleInstructions,
     "Refer to other participants naturally, for example:",
     '"I agree with the Product Expert that..."',
-    '"I\u2019d challenge the assumption about..."',
+    "\"I'd challenge the assumption about...\"",
     "Do not write dialogue transcripts.",
   ].join(" ");
 }
@@ -67,19 +75,26 @@ export function buildRoleInput({
 
   if (mode === "continue") {
     return [
-      "Recent chat room conversation, oldest to newest:",
+      "Room conversation so far, oldest to newest:",
       recentContext || "No previous messages.",
       "",
-      "Discussion task:",
-      "Continue the discussion from the conversation above. Do not wait for a new user message.",
+      "Your task:",
+      "- Continue the discussion with the other participants.",
+      "- React to the latest useful point.",
+      "- Do not ask the user a follow-up question.",
     ].join("\n");
   }
 
   return [
-    "Recent chat room conversation, oldest to newest:",
+    "Room conversation so far, oldest to newest:",
     recentContext || "No previous messages.",
     "",
-    "Latest user message:",
+    "Topic started by the user:",
     latestUserMessage ?? "",
+    "",
+    "Your task:",
+    "- Contribute to the room discussion as one participant.",
+    "- Do not answer the user directly.",
+    "- Do not ask the user a follow-up question.",
   ].join("\n");
 }

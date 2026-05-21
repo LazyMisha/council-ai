@@ -198,8 +198,12 @@ describe("selectSpeaker", () => {
     const call = openAIResponsesCreate.mock.calls[0][0];
     expect(call.instructions).toContain("only choose the next speaker");
     expect(call.instructions).toContain("Do not generate visible chat content");
+    expect(call.instructions).toContain("naturally reply to the latest participant");
+    expect(call.instructions).toContain("realistic back-and-forth");
+    expect(call.instructions).toContain("generic standalone answer");
     expect(call.instructions).toContain("Keep reason under 12 words");
     expect(call.instructions).not.toContain("draft a visible reply");
+    expect(call.max_output_tokens).toBe(80);
   });
 });
 

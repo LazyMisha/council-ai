@@ -24,6 +24,7 @@ export async function detectFinish({
       model: chatRoomModel,
       instructions: buildFinishInstructions(),
       input: buildFinishInput({ aiInstances, recentMessages }),
+      max_output_tokens: 80,
     });
 
     const content = response.output_text.trim();
@@ -50,13 +51,17 @@ function buildFinishInstructions(): string {
     "",
     "ready_to_summarize:",
     "- enough key arguments exist",
-    "- at least one tradeoff or disagreement was explored",
-    "- conversation has practical next steps or recommendation direction",
+    "- at least two different AI roles contributed",
+    "- at least one participant reacted to another participant",
+    "- at least one disagreement, refinement, or tradeoff exists",
+    "- the discussion has a concrete direction, not just generic advice",
     "",
     "continue_discussion:",
     "- discussion is still shallow",
+    "- roles gave isolated answers to the user instead of reacting to each other",
     "- important roles have not contributed enough",
-    "- unresolved disagreement should be explored more",
+    "- disagreement or tradeoff is missing",
+    "- next step is still vague",
     "",
     "Respond with ONLY a JSON object in this exact format:",
     '{"status": "ready_to_summarize", "reason": "brief reason"}',
@@ -133,17 +138,29 @@ export function fallbackDetectFinish(
   const aiMessages = recentMessages.filter(
     (message) => message.authorType === "ai",
   );
+  const uniqueRoles = new Set(
+    aiMessages
+      .map((message) => message.role)
+      .filter((role): role is string => Boolean(role)),
+  );
 
-  if (aiMessages.length < 3) {
+  if (aiMessages.length < 5) {
     return {
       status: "continue_discussion",
       reason: "Discussion is still shallow with limited AI contributions.",
     };
   }
 
+  if (uniqueRoles.size < 3) {
+    return {
+      status: "continue_discussion",
+      reason: "Discussion needs more distinct AI roles before summary.",
+    };
+  }
+
   return {
     status: "ready_to_summarize",
-    reason: "Multiple AI contributions exist; summarization is reasonable.",
+    reason: "Enough AI messages and distinct roles exist for summary.",
   };
 }
 

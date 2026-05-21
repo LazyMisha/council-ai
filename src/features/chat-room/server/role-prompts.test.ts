@@ -20,44 +20,60 @@ describe("role prompts", () => {
       });
       expect(instructions).toContain(name);
       expect(instructions).toContain(
-        "one participant in a multi-agent discussion",
+        "one participant in a CouncilAI discussion room",
       );
-      expect(instructions).toContain("Read the full conversation before replying");
+      expect(instructions).toContain("not the user's assistant");
+      expect(instructions).toContain("not a moderator");
+      expect(instructions).toContain("not writing a report");
       expect(instructions).toContain(
-        "previous AI messages in this same round",
+        "discussing the topic with the other AI participants",
       );
-      expect(instructions).toContain("Max 55 words");
-      expect(instructions).toContain("Prefer 1-3 short sentences");
+      expect(instructions).toContain("Read the conversation before replying");
       expect(instructions).toContain(
-        "Sound like a natural chat participant",
+        "The user message is the discussion topic for the room",
       );
-      expect(instructions).toContain("No essays");
-      expect(instructions).toContain("No report tone");
+      expect(instructions).toContain("Do not answer it like a personal assistant");
+      expect(instructions).toContain("Max 45 words");
+      expect(instructions).toContain("Prefer 1-2 short sentences");
+      expect(instructions).toContain(
+        "Write like a real person in a small group chat",
+      );
+      expect(instructions).toContain(
+        "Do not sound like a helpful assistant",
+      );
       expect(instructions).toContain("No generic filler");
-      expect(instructions).toContain("No headings or section labels");
-      expect(instructions).toContain("React to the previous participant only when useful");
-      expect(instructions).toContain("Avoid repeating what was already said");
-      expect(instructions).toContain('Do not say "As an AI"');
+      expect(instructions).toContain("No headings");
+      expect(instructions).toContain(
+        "Prefer reacting to another participant",
+      );
+      expect(instructions).toContain("Do not repeat what was already said");
+      expect(instructions).toContain('Do not say: "As an AI"');
       expect(instructions).toContain('"Certainly"');
       expect(instructions).toContain('"Absolutely"');
-      expect(instructions).toContain("Do not repeat the full user question back to the user");
-      expect(instructions).toContain("Ask at most one question");
-      expect(instructions).toContain("Move the discussion forward");
-      expect(instructions).toContain("Do not prefix your response with your own role name");
+      expect(instructions).toContain("Do not ask the user to clarify");
+      expect(instructions).toContain(
+        "Do not ask the user follow-up questions",
+      );
+      expect(instructions).toContain(
+        "Push the discussion forward with one useful point",
+      );
+      expect(instructions).toContain("Do not prefix the response with the role name");
       expect(instructions).toContain('Do not write labels like "Skeptic:"');
       expect(instructions).toContain("The UI already shows the speaker name");
     }
   });
 
-  it("includes the simple-topic short reply rule", () => {
+  it("avoids assistant-style user follow-up behavior", () => {
     const instructions = buildRoleInstructions({
       name: "Skeptic",
       instructions: "Focus on risks.",
     });
 
-    expect(instructions).toContain("For simple topics, use max 25 words");
-    expect(instructions).toContain("Do not over-analyze");
-    expect(instructions).toContain("Keep it casual and direct");
+    expect(instructions).toContain("Do not directly address the user");
+    expect(instructions).toContain("Do not end with a question to the user");
+    expect(instructions).toContain(
+      "If a question is useful, ask it to the room",
+    );
   });
 
   it("keeps custom AI instructions subordinate to concise chat style", () => {
@@ -70,10 +86,10 @@ describe("role prompts", () => {
     expect(instructions).toContain(
       "the concise chat-room style and word limits always win",
     );
-    expect(instructions).toContain("Max 55 words");
+    expect(instructions).toContain("Max 45 words");
   });
 
-  it("builds role input from recent context and the latest user message", () => {
+  it("frames reply input as a room topic, not a direct user request", () => {
     const recentMessages: Message[] = [
       {
         id: "message-1",
@@ -88,12 +104,19 @@ describe("role prompts", () => {
       },
     ];
 
-    expect(
-      buildRoleInput({
-        latestUserMessage: "What is the smallest next step?",
-        recentMessages,
-      }),
-    ).toContain("Skeptic: The approval path is unclear.");
+    const input = buildRoleInput({
+      latestUserMessage: "What is the smallest next step?",
+      recentMessages,
+    });
+
+    expect(input).toContain("Room conversation so far, oldest to newest:");
+    expect(input).toContain("Skeptic: The approval path is unclear.");
+    expect(input).toContain("Topic started by the user:");
+    expect(input).toContain(
+      "Contribute to the room discussion as one participant",
+    );
+    expect(input).toContain("Do not answer the user directly");
+    expect(input).not.toContain("Latest user message:");
   });
 
   it("keeps generated AI responses in the next role input", () => {
@@ -138,11 +161,16 @@ describe("role prompts", () => {
       ],
     });
 
-    expect(instructions).toContain("Continue the existing chat-room discussion");
+    expect(instructions).toContain("Continue the existing room discussion");
+    expect(instructions).toContain("Do not wait for the user");
+    expect(instructions).toContain(
+      "React to the latest useful point from another participant",
+    );
     expect(instructions).toContain(
       "unresolved issues, disagreements, assumptions, or next steps",
     );
     expect(input).toContain("Continue the discussion");
+    expect(input).toContain("React to the latest useful point");
     expect(input).not.toContain("Latest user message:");
   });
 });

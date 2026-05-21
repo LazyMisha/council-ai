@@ -108,11 +108,11 @@ describe("generateMockAIResponses", () => {
     });
 
     expect(messages[0].content).toContain("one clean integration boundary");
-    expect(messages[1].content).toContain("validate demand");
-    expect(messages[2].content).toContain("tested the critical path");
-    expect(messages[3].content).toContain("upside is real");
-    expect(messages[4].content).toContain("one user moment");
-    expect(messages[5].content).toContain("assumption fails");
+    expect(messages[1].content).toContain("one demand signal");
+    expect(messages[2].content).toContain("critical path");
+    expect(messages[3].content).toContain("enough upside");
+    expect(messages[4].content).toContain("one clear user moment");
+    expect(messages[5].content).toContain("failure would look like");
   });
 
   it("creates short mock responses", () => {
@@ -124,7 +124,8 @@ describe("generateMockAIResponses", () => {
 
     for (const message of messages) {
       const words = message.content.split(/\s+/).filter((w) => w.length > 0);
-      expect(words.length).toBeLessThanOrEqual(20);
+      expect(words.length).toBeLessThanOrEqual(24);
+      expect(message.content.endsWith("?")).toBe(false);
     }
   });
 
@@ -185,7 +186,8 @@ describe("generateMockAIResponses", () => {
     expect(messages[0].content).toContain(
       "Building on Business Analyst's point",
     );
-    expect(messages[0].content).toContain("still unclear");
+    expect(messages[0].content).toContain("Let's narrow the next decision.");
+    expect(messages[0].content.endsWith("?")).toBe(false);
     expect(messages[1].content).toContain(
       "Building on Software Architect's point",
     );

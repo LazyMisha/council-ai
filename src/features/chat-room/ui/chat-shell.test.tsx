@@ -546,7 +546,7 @@ describe("ChatShell", () => {
     expect(fetchSpy).not.toHaveBeenCalled();
   });
 
-  it("shows speaker selection and role-specific thinking states", async () => {
+  it("shows speaker selection and inline role typing state", async () => {
     const room = {
       id: "room-1",
       title: "Test Room",
@@ -619,10 +619,14 @@ describe("ChatShell", () => {
     } as Response);
 
     await waitFor(() => {
-      expect(
-        screen.getByText("Software Architect is thinking..."),
-      ).toBeInTheDocument();
+      expect(screen.getByText("typing...")).toBeInTheDocument();
     });
+    expect(screen.getByText("typing...").closest("p")).toHaveTextContent(
+      "Software Architect",
+    );
+    expect(
+      screen.queryByText("Software Architect is thinking..."),
+    ).not.toBeInTheDocument();
 
     response.resolve(
       createMockStreamResponse([
@@ -646,6 +650,7 @@ describe("ChatShell", () => {
     expect(
       screen.queryByText("AI instances are thinking..."),
     ).not.toBeInTheDocument();
+    expect(screen.queryByText("typing...")).not.toBeInTheDocument();
   });
 
   it("shows predefined AI roles after creating a room", () => {

@@ -1,5 +1,4 @@
 import type { RefObject } from "react";
-import { getRoleAccent } from "../domain/role-colors";
 import type { ChatRoom } from "../domain/types";
 import type { PendingAIStatus } from "../client/use-chat-room-state";
 import { MessageBubble } from "./message-bubble";
@@ -20,6 +19,10 @@ export function MessageList({
   scrollToBottom,
   showScrollButton,
 }: MessageListProps) {
+  const typingMessageId = getTypingMessageId(activeRoom, pendingAIStatus);
+  const visiblePendingAIStatus =
+    pendingAIStatus?.phase === "responding" ? null : pendingAIStatus;
+
   return (
     <div
       ref={containerRef}
@@ -51,11 +54,17 @@ export function MessageList({
               return <SummaryMessage key={message.id} message={message} />;
             }
 
-            return <MessageBubble key={message.id} message={message} />;
+            return (
+              <MessageBubble
+                key={message.id}
+                message={message}
+                isTyping={message.id === typingMessageId}
+              />
+            );
           })}
 
-          {pendingAIStatus ? (
-            <PendingIndicator pendingAIStatus={pendingAIStatus} />
+          {visiblePendingAIStatus ? (
+            <PendingIndicator pendingAIStatus={visiblePendingAIStatus} />
           ) : null}
 
           {showScrollButton ? (
@@ -90,31 +99,39 @@ function PendingIndicator({
 }: {
   pendingAIStatus: PendingAIStatus;
 }) {
-  const roleName = pendingAIStatus.roleName;
-  const accent = roleName ? getRoleAccent(roleName) : null;
   const label = getPendingLabel(pendingAIStatus);
 
   return (
     <p className="flex items-center gap-2 text-base text-text-tertiary md:text-sm">
-      {accent ? (
-        <span
-          className="h-1.5 w-1.5 rounded-full"
-          style={{ backgroundColor: accent.dot }}
-        />
-      ) : null}
       <span>{label}</span>
     </p>
   );
 }
 
 function getPendingLabel(pendingAIStatus: PendingAIStatus) {
-  if (pendingAIStatus.phase === "selecting") {
-    return "Choosing who should answer next...";
-  }
-
   if (pendingAIStatus.phase === "summarizing") {
     return "Creating summary...";
   }
 
-  return `${pendingAIStatus.roleName ?? "Selected AI instance"} is thinking...`;
+  return "Choosing who should answer next...";
+}
+
+function getTypingMessageId(
+  activeRoom: ChatRoom,
+  pendingAIStatus: PendingAIStatus | null,
+) {
+  if (pendingAIStatus?.phase !== "responding" || !pendingAIStatus.roleName) {
+    return null;
+  }
+
+  const latestMessage = activeRoom.messages.at(-1);
+
+  if (
+    latestMessage?.authorType === "ai" &&
+    latestMessage.role === pendingAIStatus.roleName
+  ) {
+    return latestMessage.id;
+  }
+
+  return null;
 }

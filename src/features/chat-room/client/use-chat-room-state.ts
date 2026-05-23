@@ -6,7 +6,10 @@ import {
   loadStorageState,
   saveStorageState,
 } from "../domain/storage";
-import { selectActiveChatRoom } from "../domain/state";
+import {
+  isClarificationRequestMessage,
+  selectActiveChatRoom,
+} from "../domain/state";
 import type { AIInstance } from "../domain/types";
 
 export type RolePickerTab = "predefined" | "custom";
@@ -115,6 +118,9 @@ export function useChatRoomState() {
   const hasAIDiscussionRound = activeRoom
     ? activeRoom.messages.some((message) => message.authorType === "ai")
     : false;
+  const hasPendingUserClarification = activeRoom
+    ? isClarificationRequestMessage(activeRoom.messages.at(-1))
+    : false;
 
   const resetCustomForm = () => {
     setCustomName("");
@@ -176,6 +182,7 @@ export function useChatRoomState() {
     editName,
     error,
     hasAIDiscussionRound,
+    hasPendingUserClarification,
     hasSummary,
     isAutoDiscussing,
     isRenaming,

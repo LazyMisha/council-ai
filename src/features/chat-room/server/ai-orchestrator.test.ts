@@ -246,7 +246,7 @@ describe("generateAIResponses", () => {
       "Continue the discussion with the other participants",
     );
     expect(responseCall.input).toContain(
-      "Do not ask the user a follow-up question",
+      "Ask the user a concise clarification question only when the room is blocked",
     );
     expect(responseCall.input).not.toContain("Latest user message:");
     expect(responseCall.max_output_tokens).toBe(90);

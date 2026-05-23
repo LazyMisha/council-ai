@@ -43,7 +43,7 @@ describe("selectSpeaker", () => {
     process.env.OPENAI_API_KEY = "test-key";
     openAIResponsesCreate.mockResolvedValue({
       output_text:
-        '{"aiInstanceId": "ai-2", "reason": "Can add business value"}',
+        '{"status": "selected", "aiInstanceId": "ai-2", "reason": "Can add business value"}',
     });
 
     const instances: AIInstance[] = [
@@ -58,6 +58,38 @@ describe("selectSpeaker", () => {
 
     expect(result.aiInstanceId).toBe("ai-2");
     expect(result.reason).toBe("Can add business value");
+  });
+
+  it("ignores user input requests because selector only chooses speakers", async () => {
+    process.env.OPENAI_API_KEY = "test-key";
+    openAIResponsesCreate.mockResolvedValue({
+      output_text: JSON.stringify({
+        status: "needs_user_input",
+        aiInstanceId: "",
+        reason: "Missing product context",
+        questions: ["Who is the target user?"],
+      }),
+    });
+
+    const instances: AIInstance[] = [
+      { id: "ai-1", name: "Skeptic", instructions: "Focus on risks." },
+      { id: "ai-2", name: "Optimist", instructions: "Focus on upside." },
+    ];
+
+    const result = await selectSpeaker({
+      aiInstances: instances,
+      recentMessages: [
+        {
+          id: "msg-1",
+          authorType: "user",
+          content: "Let's discuss this app idea.",
+        },
+      ],
+    });
+
+    expect(result.status).toBe("selected");
+    expect(result.aiInstanceId).toBe("ai-1");
+    expect(result.reason).toContain("Deterministic fallback");
   });
 
   it("overrides with fallback when OpenAI selects the same recent speaker and alternatives exist", async () => {
@@ -203,6 +235,7 @@ describe("selectSpeaker", () => {
     expect(call.instructions).toContain("generic standalone answer");
     expect(call.instructions).toContain("Keep reason under 12 words");
     expect(call.instructions).not.toContain("draft a visible reply");
+    expect(call.instructions).not.toContain("needs_user_input");
     expect(call.max_output_tokens).toBe(80);
   });
 });

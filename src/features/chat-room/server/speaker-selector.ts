@@ -2,6 +2,7 @@ import type { AIInstance, Message } from "../domain/types";
 import { chatRoomModel, createOpenAIClient } from "./openai";
 
 export type SpeakerSelection = {
+  status: "selected";
   aiInstanceId: string;
   reason: string;
 };
@@ -14,7 +15,11 @@ export async function selectSpeaker({
   recentMessages: Message[];
 }): Promise<SpeakerSelection> {
   if (aiInstances.length === 0) {
-    return { aiInstanceId: "", reason: "No AI instances available." };
+    return {
+      status: "selected",
+      aiInstanceId: "",
+      reason: "No AI instances available.",
+    };
   }
 
   const client = createOpenAIClient();
@@ -34,13 +39,14 @@ export async function selectSpeaker({
     const content = response.output_text.trim();
     const parsed = parseSelectorOutput(content);
     const lastSpeakerId = findLastSpeakerId(aiInstances, recentMessages);
-
     const isValidChoice =
-      parsed &&
+      parsed?.status === "selected" &&
       aiInstances.some((instance) => instance.id === parsed.aiInstanceId);
 
     const isSameAsLastSpeaker =
-      parsed?.aiInstanceId === lastSpeakerId && aiInstances.length > 1;
+      parsed?.status === "selected" &&
+      parsed.aiInstanceId === lastSpeakerId &&
+      aiInstances.length > 1;
 
     if (isValidChoice && !isSameAsLastSpeaker) {
       return parsed;
@@ -80,7 +86,7 @@ function buildSelectorInstructions(): string {
     "- Avoid repetition.",
     "",
     "Respond with ONLY a JSON object in this exact format:",
-    '{"aiInstanceId": "<id>", "reason": "<brief reason>"}',
+    '{"status": "selected", "aiInstanceId": "<id>", "reason": "<brief reason>"}',
     "Keep reason under 12 words.",
     "No markdown, no extra text.",
   ].join("\n");
@@ -129,12 +135,18 @@ function buildSelectorInput({
 function parseSelectorOutput(content: string): SpeakerSelection | null {
   try {
     const json = JSON.parse(content) as unknown;
+
+    if (!isRecord(json) || typeof json.reason !== "string") {
+      return null;
+    }
+
     if (
-      isRecord(json) &&
+      (json.status === undefined || json.status === "selected") &&
       typeof json.aiInstanceId === "string" &&
       typeof json.reason === "string"
     ) {
       return {
+        status: "selected",
         aiInstanceId: json.aiInstanceId,
         reason: json.reason,
       };
@@ -150,11 +162,16 @@ export function fallbackSelectSpeaker(
   recentMessages: Message[],
 ): SpeakerSelection {
   if (aiInstances.length === 0) {
-    return { aiInstanceId: "", reason: "No AI instances available." };
+    return {
+      status: "selected",
+      aiInstanceId: "",
+      reason: "No AI instances available.",
+    };
   }
 
   if (aiInstances.length === 1) {
     return {
+      status: "selected",
       aiInstanceId: aiInstances[0].id,
       reason: "Only one AI instance available.",
     };
@@ -195,6 +212,7 @@ export function fallbackSelectSpeaker(
   const selected = candidates[0] ?? sorted[0] ?? aiInstances[0];
 
   return {
+    status: "selected",
     aiInstanceId: selected.id,
     reason: `Deterministic fallback: ${selected.name} has spoken least recently.`,
   };

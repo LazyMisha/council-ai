@@ -563,6 +563,8 @@ describe("ChatShell", () => {
     };
     const selection = createDeferred<Response>();
     const response = createDeferred<Response>();
+    let selectionCount = 0;
+    let respondCount = 0;
 
     window.localStorage.setItem(
       "council-ai-chat-rooms",
@@ -576,17 +578,43 @@ describe("ChatShell", () => {
       if (typeof url !== "string") return { ok: false } as Response;
 
       if (url.includes("/api/chat-room/select-speaker")) {
+        selectionCount++;
+        if (selectionCount > 1) {
+          return {
+            ok: true,
+            json: async () => ({
+              aiInstanceId: "skeptic",
+              reason: "Risk response next.",
+            }),
+          } as Response;
+        }
+
         return selection.promise;
       }
 
       if (url.includes("/api/chat-room/respond")) {
+        respondCount++;
+        if (respondCount > 1) {
+          return createMockStreamResponse([
+            {
+              type: "done",
+              message: {
+                id: "ai-follow-up",
+                authorType: "ai",
+                role: "Skeptic",
+                content: "Check the riskiest dependency next.",
+              },
+            },
+          ]);
+        }
+
         return response.promise;
       }
 
       if (url.includes("/api/chat-room/finish")) {
         return {
           ok: true,
-          json: async () => ({ status: "continue_discussion" }),
+          json: async () => ({ status: "ready_to_summarize" }),
         } as Response;
       }
 
@@ -645,6 +673,11 @@ describe("ChatShell", () => {
     await waitFor(() => {
       expect(
         screen.getByText("Start with the integration boundary."),
+      ).toBeInTheDocument();
+    });
+    await waitFor(() => {
+      expect(
+        screen.getByText("Check the riskiest dependency next."),
       ).toBeInTheDocument();
     });
     expect(

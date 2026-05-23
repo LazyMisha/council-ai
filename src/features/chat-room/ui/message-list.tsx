@@ -43,7 +43,7 @@ export function MessageList({
               return (
                 <p
                   key={message.id}
-                  className="text-base text-text-tertiary md:text-sm"
+                  className="whitespace-pre-wrap text-base text-text-tertiary md:text-sm"
                 >
                   {message.content}
                 </p>

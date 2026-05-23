@@ -43,7 +43,9 @@ export function buildRoleInstructions({
     "Do not try to cover every angle.",
     "Add one useful point from your role.",
     "If context is missing, make a small assumption and continue.",
-    "Do not ask the user to clarify.",
+    "Do not turn the discussion into a user interview.",
+    "If a missing detail blocks useful discussion, ask the user one concise clarification question.",
+    "Only ask the user when your role cannot make progress with a small stated assumption.",
     "If you need to challenge something, challenge another participant's point.",
     ...visibleAIStyleInstructions,
     "Refer to other participants naturally, for example:",
@@ -81,7 +83,7 @@ export function buildRoleInput({
       "Your task:",
       "- Continue the discussion with the other participants.",
       "- React to the latest useful point.",
-      "- Do not ask the user a follow-up question.",
+      "- Ask the user a concise clarification question only when the room is blocked.",
     ].join("\n");
   }
 
@@ -94,7 +96,7 @@ export function buildRoleInput({
     "",
     "Your task:",
     "- Contribute to the room discussion as one participant.",
-    "- Do not answer the user directly.",
-    "- Do not ask the user a follow-up question.",
+    "- Do not answer the user directly unless a blocking clarification question is needed.",
+    "- Ask the user a concise clarification question only when the room is blocked.",
   ].join("\n");
 }

@@ -1,10 +1,10 @@
 import {
   appendMessages,
   appendUserMessage,
+  createClarificationRequestMessage,
   createId,
   createUserMessage,
   markCanSummarize,
-  markCanSummarizeIfMessagesUnchanged,
   updateMessageContent,
 } from "../domain/state";
 import type { AIInstance, Message } from "../domain/types";
@@ -80,38 +80,18 @@ export function createDiscussionActions(state: ChatRoomState) {
             finalMessage.content,
           ),
         );
-        void fetchFinishDecision(roomId, aiInstances, [
-          ...recentMessages,
-          finalMessage,
-        ]);
+
+        if (aiInstances.length > 1) {
+          await runAutoDiscussion({
+            aiInstances,
+            initialMessages: [...recentMessages, finalMessage],
+            roomId,
+            state,
+          });
+        }
       }
     } finally {
       state.clearPendingAIStatus(roomId);
-    }
-  };
-
-  const fetchFinishDecision = async (
-    roomId: string,
-    aiInstances: AIInstance[],
-    recentMessages: Message[],
-  ) => {
-    try {
-      const decision = await requestFinishDecision({
-        aiInstances,
-        recentMessages,
-      });
-
-      if (decision?.status === "ready_to_summarize") {
-        state.setChatRooms((rooms) =>
-          markCanSummarizeIfMessagesUnchanged({
-            chatRooms: rooms,
-            roomId,
-            recentMessages,
-          }),
-        );
-      }
-    } catch {
-      // Silently ignore finish detection failures.
     }
   };
 
@@ -161,108 +141,13 @@ export function createDiscussionActions(state: ChatRoomState) {
     }
 
     const roomId = activeRoom.id;
-    const maxTurns = 20;
 
-    state.setAutoDiscussingRoomIds((ids) => [...ids, roomId]);
-
-    let currentMessages = [...activeRoom.messages];
-    const aiInstances = activeRoom.aiInstances;
-
-    try {
-      for (let turn = 0; turn < maxTurns; turn++) {
-        if (state.stoppingAutoDiscussRef.current.has(roomId)) {
-          break;
-        }
-
-        const selectedInstance = await selectNextAIInstance({
-          roomId,
-          aiInstances,
-          recentMessages: currentMessages,
-          state,
-        });
-
-        if (state.stoppingAutoDiscussRef.current.has(roomId)) {
-          break;
-        }
-
-        const placeholderId = createId("streaming");
-        const placeholder: Message = {
-          id: placeholderId,
-          authorType: "ai",
-          role: selectedInstance.name,
-          content: "",
-        };
-
-        state.setChatRooms((rooms) =>
-          appendMessages(rooms, roomId, [placeholder]),
-      );
-
-        let finalMessage: Message | null = null;
-
-        for await (const event of streamAIResponses({
-          mode: "continue",
-          aiInstances,
-          recentMessages: currentMessages,
-          targetAIInstanceId: selectedInstance.id,
-        })) {
-          if (event.type === "chunk") {
-            state.setChatRooms((rooms) =>
-              updateMessageContent(
-                rooms,
-                roomId,
-                placeholderId,
-                event.content,
-              ),
-            );
-          } else if (event.type === "done") {
-            finalMessage = event.message;
-          }
-        }
-
-        await wait(300);
-
-        if (!finalMessage) {
-          break;
-        }
-
-        currentMessages = [...currentMessages, finalMessage];
-        state.setChatRooms((rooms) =>
-          updateMessageContent(
-            rooms,
-            roomId,
-            placeholderId,
-            finalMessage.content,
-          ),
-        );
-
-        if (state.stoppingAutoDiscussRef.current.has(roomId)) {
-          state.clearPendingAIStatus(roomId);
-        } else {
-          state.setPendingAIStatus({
-            roomId,
-            phase: "selecting",
-          });
-        }
-
-        const finishDecision = await requestFinishDecision({
-          aiInstances,
-          recentMessages: currentMessages,
-        });
-
-        if (finishDecision?.status === "ready_to_summarize") {
-          state.setChatRooms((rooms) => markCanSummarize(rooms, roomId));
-        }
-      }
-    } finally {
-      state.setAutoDiscussingRoomIds((ids) =>
-        ids.filter((id) => id !== roomId),
-      );
-      state.clearPendingAIStatus(roomId);
-      state.setStoppingAutoDiscussRoomIds((ids) =>
-        ids.filter((id) => id !== roomId),
-      );
-      state.stoppingAutoDiscussRef.current.delete(roomId);
-    }
+    await runAutoDiscussion({
+      aiInstances: activeRoom.aiInstances,
+      initialMessages: activeRoom.messages,
+      roomId,
+      state,
+    });
   };
 
   const stopAutoDiscuss = () => {
@@ -293,7 +178,7 @@ async function selectNextAIInstance({
   aiInstances: AIInstance[];
   recentMessages: Message[];
   state: ChatRoomState;
-}) {
+}): Promise<AIInstance> {
   if (aiInstances.length === 1) {
     const [selectedInstance] = aiInstances;
 
@@ -316,6 +201,7 @@ async function selectNextAIInstance({
     aiInstances,
     recentMessages,
   });
+
   const selectedInstance =
     aiInstances.find((instance) => instance.id === selection?.aiInstanceId) ??
     aiInstances[0];
@@ -328,6 +214,145 @@ async function selectNextAIInstance({
   });
 
   return selectedInstance;
+}
+
+async function runAutoDiscussion({
+  aiInstances,
+  initialMessages,
+  roomId,
+  state,
+}: {
+  aiInstances: AIInstance[];
+  initialMessages: Message[];
+  roomId: string;
+  state: ChatRoomState;
+}) {
+  const maxTurns = 20;
+
+  state.setAutoDiscussingRoomIds((ids) =>
+    ids.includes(roomId) ? ids : [...ids, roomId],
+  );
+
+  let currentMessages = [...initialMessages];
+
+  try {
+    for (let turn = 0; turn < maxTurns; turn++) {
+      if (state.stoppingAutoDiscussRef.current.has(roomId)) {
+        break;
+      }
+
+      const selectedInstance = await selectNextAIInstance({
+        roomId,
+        aiInstances,
+        recentMessages: currentMessages,
+        state,
+      });
+
+      if (state.stoppingAutoDiscussRef.current.has(roomId)) {
+        break;
+      }
+
+      const placeholderId = createId("streaming");
+      const placeholder: Message = {
+        id: placeholderId,
+        authorType: "ai",
+        role: selectedInstance.name,
+        content: "",
+      };
+
+      state.setChatRooms((rooms) =>
+        appendMessages(rooms, roomId, [placeholder]),
+      );
+
+      let finalMessage: Message | null = null;
+
+      for await (const event of streamAIResponses({
+        mode: "continue",
+        aiInstances,
+        recentMessages: currentMessages,
+        targetAIInstanceId: selectedInstance.id,
+      })) {
+        if (event.type === "chunk") {
+          state.setChatRooms((rooms) =>
+            updateMessageContent(rooms, roomId, placeholderId, event.content),
+          );
+        } else if (event.type === "done") {
+          finalMessage = event.message;
+        }
+      }
+
+      await wait(300);
+
+      if (!finalMessage) {
+        break;
+      }
+
+      currentMessages = [...currentMessages, finalMessage];
+      state.setChatRooms((rooms) =>
+        updateMessageContent(
+          rooms,
+          roomId,
+          placeholderId,
+          finalMessage.content,
+        ),
+      );
+
+      if (state.stoppingAutoDiscussRef.current.has(roomId)) {
+        state.clearPendingAIStatus(roomId);
+      } else {
+        state.setPendingAIStatus({
+          roomId,
+          phase: "selecting",
+        });
+      }
+
+      const finishDecision = await requestFinishDecision({
+        aiInstances,
+        recentMessages: currentMessages,
+      });
+
+      if (finishDecision?.status === "ready_to_summarize") {
+        state.setChatRooms((rooms) => markCanSummarize(rooms, roomId));
+        break;
+      }
+
+      if (finishDecision?.status === "needs_user_input") {
+        const message = appendClarificationRequest({
+          roomId,
+          questions: finishDecision.questions,
+          state,
+          summary: finishDecision.summary,
+        });
+        currentMessages = [...currentMessages, message];
+        break;
+      }
+    }
+  } finally {
+    state.setAutoDiscussingRoomIds((ids) => ids.filter((id) => id !== roomId));
+    state.clearPendingAIStatus(roomId);
+    state.setStoppingAutoDiscussRoomIds((ids) =>
+      ids.filter((id) => id !== roomId),
+    );
+    state.stoppingAutoDiscussRef.current.delete(roomId);
+  }
+}
+
+function appendClarificationRequest({
+  questions,
+  roomId,
+  state,
+  summary,
+}: {
+  questions: string[];
+  roomId: string;
+  state: ChatRoomState;
+  summary: string;
+}) {
+  const message = createClarificationRequestMessage({ questions, summary });
+
+  state.setChatRooms((rooms) => appendMessages(rooms, roomId, [message]));
+
+  return message;
 }
 
 function wait(duration: number) {

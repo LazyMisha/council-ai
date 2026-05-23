@@ -3,6 +3,7 @@ import { POST } from "./route";
 
 vi.mock("@/features/chat-room/server/speaker-selector", () => ({
   selectSpeaker: vi.fn().mockResolvedValue({
+    status: "selected",
     aiInstanceId: "ai-1",
     reason: "Best next speaker.",
   }),
@@ -38,6 +39,7 @@ describe("POST /api/chat-room/select-speaker", () => {
       "@/features/chat-room/server/speaker-selector"
     );
     vi.mocked(selectSpeaker).mockResolvedValue({
+      status: "selected",
       aiInstanceId: "ai-2",
       reason: "Fresh perspective needed.",
     });
@@ -59,6 +61,7 @@ describe("POST /api/chat-room/select-speaker", () => {
 
     expect(response.status).toBe(200);
     expect(await response.json()).toEqual({
+      status: "selected",
       aiInstanceId: "ai-2",
       reason: "Fresh perspective needed.",
     });

@@ -11,16 +11,21 @@ The first real implementation should be manual:
 1. User starts a topic or replies in a chat room.
 2. User sends the message.
 3. Client shows that CouncilAI is choosing who should answer next.
-4. An internal smart speaker selector chooses exactly one AI instance.
+4. An internal smart speaker selector chooses exactly one AI instance for the first response.
 5. Client shows the selected role-specific thinking indicator.
 6. Server generates one response from the selected AI instance.
 7. Client appends the returned role response as a message.
-8. User can click Auto-discuss to advance the discussion without sending a new user message.
-9. User can click Summarize to append one internal moderator summary message.
+8. The app continues AI-to-AI discussion automatically.
+9. After at least 10 AI messages since the latest user message, an internal finish detector can stop the auto-discussion.
+10. The finish detector either enables Summarize or asks one consolidated set of user questions.
 
 ## Speaker Selection
 
-When the user sends a normal message or Auto-discuss advances a turn, a smart speaker selector picks the next AI instance. The selector is invisible: it does not appear in the AI role bar and does not create a visible message. It returns structured data like `{ "aiInstanceId": "...", "reason": "..." }`.
+When the user sends a normal message or Auto-discuss advances a turn, a smart speaker selector picks the next AI instance. The selector is invisible: it does not appear in the AI role bar and does not create a visible role message. It never asks the user for clarification; user-question decisions belong to finish detection.
+
+```json
+{ "status": "selected", "aiInstanceId": "...", "reason": "..." }
+```
 
 The selector considers which AI instance can add the most value now, who has not spoken recently, who can address unresolved disagreement, who can challenge weak assumptions, and who can move the discussion toward a useful conclusion. It avoids selecting an AI instance that would likely repeat previous points. It also avoids selecting the same AI instance that spoke last when another AI instance can contribute.
 
@@ -87,23 +92,27 @@ The UI renders each section label in bold for easy scanning.
 
 An internal finish detector evaluates whether the discussion has enough useful information after each AI discussion round completes.
 
-The finish detector is invisible: it does not appear in the AI role bar and does not create a visible chat message. It returns structured data like `{ "status": "ready_to_summarize", "reason": "..." }`.
+The finish detector is invisible: it does not appear in the AI role bar and does not create a visible chat message. It runs after each auto-discussion AI response.
 
 Possible statuses:
 - `ready_to_summarize`: enough key arguments exist, a tradeoff or disagreement was explored, and there are practical next steps.
 - `continue_discussion`: the discussion is still shallow or important roles have not contributed enough.
+- `needs_user_input`: AI instances raised user-facing questions, later AI messages did not resolve them, and those unresolved questions block a useful summary. The detector must include a short recap before the questions.
 
 If `OPENAI_API_KEY` is missing or the detector fails, a deterministic fallback is used:
-- Prefer `continue_discussion` when fewer than 3 AI messages exist.
-- Prefer `ready_to_summarize` when 3 or more AI messages exist.
+- Prefer `continue_discussion` when fewer than 10 AI messages exist after the latest user message.
+- Prefer `continue_discussion` when fewer than 3 distinct AI roles have contributed.
+- Prefer `ready_to_summarize` when 10 or more AI messages from 3 or more roles exist.
 
-The finish detector runs after each AI response. When it decides the discussion is ready to summarize, it sets the room's `canSummarize` flag to `true`. Once this flag is set, it stays `true` for that room's lifetime — it is not reset by new user messages or additional Auto-discuss turns. The Summarize button is shown whenever `canSummarize` is `true` and AI messages exist in the room.
+The finish detector has a hard 10-AI-message gate since the latest user message. Before that gate, it cannot summarize or ask the user questions. When it decides the discussion is ready to summarize, it sets the room's `canSummarize` flag to `true` and stops auto-discussion. Once this flag is set, it stays `true` for that room's lifetime — it is not reset by new user messages or additional Auto-discuss turns. The Summarize button is shown whenever `canSummarize` is `true` and AI messages exist in the room.
+
+When the detector returns `needs_user_input`, the client appends one system clarification message with a short discussion summary followed by up to three consolidated questions, then stops auto-discussion. After the user answers, the 10-AI-message gate resets and applies to fresh AI responses after that answer.
 
 The `canSummarize` flag is persisted in `localStorage` as part of the chat room state. It is reset only when:
 - the room's messages are cleared
 - the room is deleted
 
-When the finish detector returns anything other than `ready_to_summarize`, no status text is shown. Auto-discuss remains available at all times after an AI response exists.
+When the finish detector returns `continue_discussion`, no status text is shown and auto-discussion continues.
 
 ## Auto-Discussion Mode
 
@@ -113,7 +122,10 @@ Behavior:
 - Shown after the first AI discussion round exists.
 - When clicked, the app enters auto-discussion mode.
 - Each turn uses the existing smart speaker selector to pick one AI instance.
-- After each AI response, the finish detector runs. If it says `ready_to_summarize`, the Summarize button is shown but Auto-discuss keeps running.
+- Sending the first topic also enters auto-discussion mode automatically after the first AI response.
+- If finish detection requests clarification, Auto-discuss stops and the app appends a system message summarizing those questions.
+- While the latest message is a clarification request, Auto-discuss is hidden and Send remains available for the user's answer.
+- After each AI response, the finish detector runs. If it says `ready_to_summarize`, the Summarize button is shown and Auto-discuss stops.
 - Auto-discussion stops when:
   - the user clicks Stop
   - a max turn limit (20) is reached

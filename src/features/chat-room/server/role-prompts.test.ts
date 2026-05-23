@@ -50,10 +50,10 @@ describe("role prompts", () => {
       expect(instructions).toContain('Do not say: "As an AI"');
       expect(instructions).toContain('"Certainly"');
       expect(instructions).toContain('"Absolutely"');
-      expect(instructions).toContain("Do not ask the user to clarify");
       expect(instructions).toContain(
-        "Do not ask the user follow-up questions",
+        "ask the user one concise clarification question",
       );
+      expect(instructions).toContain("cannot make progress");
       expect(instructions).toContain(
         "Push the discussion forward with one useful point",
       );
@@ -63,17 +63,16 @@ describe("role prompts", () => {
     }
   });
 
-  it("avoids assistant-style user follow-up behavior", () => {
+  it("allows direct user questions only when the room is blocked", () => {
     const instructions = buildRoleInstructions({
       name: "Skeptic",
       instructions: "Focus on risks.",
     });
 
-    expect(instructions).toContain("Do not directly address the user");
-    expect(instructions).toContain("Do not end with a question to the user");
     expect(instructions).toContain(
-      "If a question is useful, ask it to the room",
+      "Only ask the user when your role cannot make progress",
     );
+    expect(instructions).toContain("make a small assumption and continue");
   });
 
   it("keeps custom AI instructions subordinate to concise chat style", () => {
@@ -116,6 +115,9 @@ describe("role prompts", () => {
       "Contribute to the room discussion as one participant",
     );
     expect(input).toContain("Do not answer the user directly");
+    expect(input).toContain(
+      "Ask the user a concise clarification question only when the room is blocked",
+    );
     expect(input).not.toContain("Latest user message:");
   });
 
@@ -171,6 +173,9 @@ describe("role prompts", () => {
     );
     expect(input).toContain("Continue the discussion");
     expect(input).toContain("React to the latest useful point");
+    expect(input).toContain(
+      "Ask the user a concise clarification question only when the room is blocked",
+    );
     expect(input).not.toContain("Latest user message:");
   });
 });

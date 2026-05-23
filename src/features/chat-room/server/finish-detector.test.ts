@@ -30,21 +30,7 @@ describe("detectFinish", () => {
     { id: "ai-2", name: "Optimist", instructions: "Focus on upside." },
   ];
 
-  const recentMessages: Message[] = [
-    { id: "msg-1", authorType: "user", content: "Should we launch?" },
-    {
-      id: "msg-2",
-      authorType: "ai",
-      role: "Skeptic",
-      content: "The approval path is unclear.",
-    },
-    {
-      id: "msg-3",
-      authorType: "ai",
-      role: "Optimist",
-      content: "The upside is significant.",
-    },
-  ];
+  const recentMessages: Message[] = createMessagesWithAIContributions(10);
 
   it("returns ready_to_summarize when OpenAI decides discussion is mature", async () => {
     process.env.OPENAI_API_KEY = "test-key";
@@ -77,8 +63,57 @@ describe("detectFinish", () => {
 
     const result = await detectFinish({ aiInstances: instances, recentMessages });
 
-    expect(result.status).toBe("continue_discussion");
+    expect(result.status).toBe("ready_to_summarize");
     expect(openAIResponsesCreate).not.toHaveBeenCalled();
+  });
+
+  it("continues without calling OpenAI before 10 AI messages", async () => {
+    process.env.OPENAI_API_KEY = "test-key";
+
+    const result = await detectFinish({
+      aiInstances: instances,
+      recentMessages: createMessagesWithAIContributions(9),
+    });
+
+    expect(result.status).toBe("continue_discussion");
+    expect(result.reason).toContain("10 AI messages");
+    expect(openAIResponsesCreate).not.toHaveBeenCalled();
+  });
+
+  it("returns user input request after 10 AI messages when questions block summary", async () => {
+    process.env.OPENAI_API_KEY = "test-key";
+    openAIResponsesCreate.mockResolvedValue({
+      output_text: JSON.stringify({
+        status: "needs_user_input",
+        reason: "Blocking questions remain",
+        summary:
+          "The AI instances agree launch timing depends on segment priority and evidence.",
+        questions: [
+          "Which customer segment matters most?",
+          "What launch constraint is immovable?",
+          "What evidence supports demand?",
+          "Ignored extra question?",
+        ],
+      }),
+    });
+
+    const result = await detectFinish({
+      aiInstances: instances,
+      recentMessages: createMessagesWithAIContributions(10, undefined, {
+        questionAt: 4,
+      }),
+    });
+
+    expect(result.status).toBe("needs_user_input");
+    if (result.status !== "needs_user_input") {
+      throw new Error("Expected finish detector to request user input.");
+    }
+    expect(result.summary).toContain("launch timing depends");
+    expect(result.questions).toEqual([
+      "Which customer segment matters most?",
+      "What launch constraint is immovable?",
+      "What evidence supports demand?",
+    ]);
   });
 
   it("uses fallback when OpenAI throws", async () => {
@@ -87,7 +122,7 @@ describe("detectFinish", () => {
 
     const result = await detectFinish({ aiInstances: instances, recentMessages });
 
-    expect(result.status).toBe("continue_discussion");
+    expect(result.status).toBe("ready_to_summarize");
   });
 
   it("does not create a visible AI participant message", async () => {
@@ -115,14 +150,20 @@ describe("detectFinish", () => {
 
     const call = openAIResponsesCreate.mock.calls[0][0];
     expect(call.instructions).toContain(
-      "only decide whether summarization is available",
+      "continue, can be summarized, or needs user input",
     );
-    expect(call.instructions).toContain("Do not generate visible chat content, status copy, or summary text");
+    expect(call.instructions).toContain(
+      "Do not generate chat messages or status copy outside the JSON object",
+    );
+    expect(call.instructions).toContain("fewer than 10 AI messages");
+    expect(call.instructions).toContain("needs_user_input");
+    expect(call.instructions).toContain("summary");
     expect(call.instructions).toContain("at least two different AI roles contributed");
     expect(call.instructions).toContain("at least one participant reacted to another participant");
     expect(call.instructions).toContain("roles gave isolated answers to the user");
     expect(call.instructions).toContain("Keep reason under 12 words");
-    expect(call.max_output_tokens).toBe(80);
+    expect(call.instructions).toContain("Keep needs_user_input summary under 35 words");
+    expect(call.max_output_tokens).toBe(300);
   });
 
   it("ignores unknown statuses from OpenAI and falls back", async () => {
@@ -134,32 +175,70 @@ describe("detectFinish", () => {
 
     const result = await detectFinish({ aiInstances: instances, recentMessages });
 
+    expect(result.status).toBe("ready_to_summarize");
+  });
+
+  it("does not let finish detector invent user questions", async () => {
+    process.env.OPENAI_API_KEY = "test-key";
+    openAIResponsesCreate.mockResolvedValue({
+      output_text: JSON.stringify({
+        status: "needs_user_input",
+        reason: "Missing target user",
+        summary: "The discussion has not settled the target user.",
+        questions: ["Who is the target user?"],
+      }),
+    });
+
+    const result = await detectFinish({
+      aiInstances: instances,
+      recentMessages: createMessagesWithAIContributions(10),
+    });
+
     expect(result.status).toBe("continue_discussion");
+    expect(result.reason).toContain("No AI user questions");
+  });
+
+  it("uses a fallback summary when user input requests omit a summary", async () => {
+    process.env.OPENAI_API_KEY = "test-key";
+    openAIResponsesCreate.mockResolvedValue({
+      output_text: JSON.stringify({
+        status: "needs_user_input",
+        reason: "Blocking questions remain",
+        questions: ["Which customer segment matters most?"],
+      }),
+    });
+
+    const result = await detectFinish({
+      aiInstances: instances,
+      recentMessages: createMessagesWithAIContributions(10, undefined, {
+        questionAt: 4,
+      }),
+    });
+
+    expect(result.status).toBe("needs_user_input");
+    if (result.status !== "needs_user_input") {
+      throw new Error("Expected finish detector to request user input.");
+    }
+    expect(result.summary).toContain("unresolved user questions");
+    expect(result.questions).toEqual(["Which customer segment matters most?"]);
   });
 });
 
 describe("fallbackDetectFinish", () => {
-  it("returns continue_discussion when fewer than 5 AI messages exist", () => {
-    const messages: Message[] = [
-      { id: "msg-1", authorType: "user", content: "Hello" },
-      { id: "msg-2", authorType: "ai", role: "Skeptic", content: "Risky." },
-    ];
+  it("returns continue_discussion when fewer than 10 AI messages exist", () => {
+    const messages = createMessagesWithAIContributions(9);
 
     const result = fallbackDetectFinish(messages);
 
     expect(result.status).toBe("continue_discussion");
-    expect(result.reason).toContain("shallow");
+    expect(result.reason).toContain("10 AI messages");
   });
 
   it("returns continue_discussion when fewer than 3 roles have contributed", () => {
-    const messages: Message[] = [
-      { id: "msg-1", authorType: "user", content: "Hello" },
-      { id: "msg-2", authorType: "ai", role: "Skeptic", content: "A" },
-      { id: "msg-3", authorType: "ai", role: "Optimist", content: "B" },
-      { id: "msg-4", authorType: "ai", role: "Skeptic", content: "C" },
-      { id: "msg-5", authorType: "ai", role: "Optimist", content: "D" },
-      { id: "msg-6", authorType: "ai", role: "Skeptic", content: "E" },
-    ];
+    const messages = createMessagesWithAIContributions(10, [
+      "Skeptic",
+      "Optimist",
+    ]);
 
     const result = fallbackDetectFinish(messages);
 
@@ -167,15 +246,8 @@ describe("fallbackDetectFinish", () => {
     expect(result.reason).toContain("distinct AI roles");
   });
 
-  it("returns ready_to_summarize after 5 AI messages from 3 roles", () => {
-    const messages: Message[] = [
-      { id: "msg-1", authorType: "user", content: "Hello" },
-      { id: "msg-2", authorType: "ai", role: "Skeptic", content: "A" },
-      { id: "msg-3", authorType: "ai", role: "Optimist", content: "B" },
-      { id: "msg-4", authorType: "ai", role: "Critic", content: "C" },
-      { id: "msg-5", authorType: "ai", role: "Skeptic", content: "D" },
-      { id: "msg-6", authorType: "ai", role: "Optimist", content: "E" },
-    ];
+  it("returns ready_to_summarize after 10 AI messages from 3 roles", () => {
+    const messages = createMessagesWithAIContributions(10);
 
     const result = fallbackDetectFinish(messages);
 
@@ -193,3 +265,22 @@ describe("fallbackDetectFinish", () => {
     expect(result.status).toBe("continue_discussion");
   });
 });
+
+function createMessagesWithAIContributions(
+  count: number,
+  roles = ["Skeptic", "Optimist", "Critic"],
+  options: { questionAt?: number } = {},
+): Message[] {
+  return [
+    { id: "msg-user", authorType: "user", content: "Should we launch?" },
+    ...Array.from({ length: count }, (_, index) => ({
+      id: `msg-ai-${index + 1}`,
+      authorType: "ai" as const,
+      role: roles[index % roles.length],
+      content:
+        options.questionAt === index + 1
+          ? "Which customer segment matters most?"
+          : `AI point ${index + 1}.`,
+    })),
+  ];
+}

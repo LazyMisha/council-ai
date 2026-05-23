@@ -43,7 +43,8 @@ export function ChatComposer({ controller }: ChatComposerProps) {
   if (!activeRoom) return null;
 
   const hasAIInstances = activeRoom.aiInstances.length > 0;
-  const canAutoDiscuss = activeRoom.aiInstances.length > 1;
+  const canAutoDiscuss =
+    activeRoom.aiInstances.length > 1 && !controller.hasPendingUserClarification;
   const canSend = hasAIInstances && !controller.isAutoDiscussing;
   const showDiscussionActions =
     controller.isAutoDiscussing ||

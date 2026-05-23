@@ -18,6 +18,7 @@ export type Message = {
   authorType: "user" | "ai" | "system" | "summary";
   content: string;
   role?: string;
+  systemType?: "clarification_request";
 };
 
 export type ChatRoom = {

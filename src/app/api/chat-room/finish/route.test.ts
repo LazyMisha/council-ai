@@ -62,6 +62,32 @@ describe("POST /api/chat-room/finish", () => {
     expect(data.status).toBe("ready_to_summarize");
   });
 
+  it("returns clarification summary and questions when user input is needed", async () => {
+    detectFinish.mockResolvedValue({
+      status: "needs_user_input",
+      reason: "Blocking questions remain",
+      summary: "The AI instances need one constraint before deciding.",
+      questions: ["Which launch constraint is immovable?"],
+    });
+
+    const request = new Request("http://localhost/api/chat-room/finish", {
+      method: "POST",
+      body: JSON.stringify(validBody),
+    });
+
+    const response = await POST(request);
+    const data = (await response.json()) as {
+      status: string;
+      summary: string;
+      questions: string[];
+    };
+
+    expect(response.status).toBe(200);
+    expect(data.status).toBe("needs_user_input");
+    expect(data.summary).toContain("one constraint");
+    expect(data.questions).toEqual(["Which launch constraint is immovable?"]);
+  });
+
   it("returns 400 for invalid JSON", async () => {
     const request = new Request("http://localhost/api/chat-room/finish", {
       method: "POST",

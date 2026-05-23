@@ -47,6 +47,44 @@ export function createUserMessage(
   };
 }
 
+export function createClarificationRequestMessage(
+  {
+    questions,
+    summary,
+  }: {
+    questions: string[];
+    summary: string;
+  },
+  idFactory: IdFactory = createId,
+): Message {
+  const visibleQuestions = questions
+    .map((question) => question.trim())
+    .filter(Boolean);
+  const visibleSummary = summary.trim();
+
+  return {
+    id: idFactory("clarification"),
+    authorType: "system",
+    systemType: "clarification_request",
+    content: [
+      "CouncilAI needs your input before continuing:",
+      "",
+      "Summary:",
+      visibleSummary,
+      "",
+      "Questions:",
+      ...visibleQuestions.map((question, index) => `${index + 1}. ${question}`),
+    ].join("\n"),
+  };
+}
+
+export function isClarificationRequestMessage(message?: Message) {
+  return (
+    message?.authorType === "system" &&
+    message.systemType === "clarification_request"
+  );
+}
+
 export function selectActiveChatRoom(
   chatRooms: ChatRoom[],
   activeRoomId: string,
@@ -154,26 +192,6 @@ export function markCanSummarize(chatRooms: ChatRoom[], roomId: string) {
     ...room,
     canSummarize: true,
   }));
-}
-
-export function markCanSummarizeIfMessagesUnchanged({
-  chatRooms,
-  recentMessages,
-  roomId,
-}: {
-  chatRooms: ChatRoom[];
-  recentMessages: Message[];
-  roomId: string;
-}) {
-  return updateChatRoom(chatRooms, roomId, (room) => {
-    const lastCurrent = room.messages[room.messages.length - 1];
-    const lastSent = recentMessages[recentMessages.length - 1];
-    const messagesUnchanged =
-      room.messages.length === recentMessages.length &&
-      lastCurrent?.id === lastSent?.id;
-
-    return messagesUnchanged ? { ...room, canSummarize: true } : room;
-  });
 }
 
 export function updateMessageContent(

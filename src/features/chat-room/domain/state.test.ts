@@ -5,10 +5,11 @@ import {
   appendUserMessage,
   clearChatRoomMessages,
   createAIInstance,
+  createClarificationRequestMessage,
   createEmptyChatRoom,
   createUserMessage,
   deleteChatRoom,
-  markCanSummarizeIfMessagesUnchanged,
+  isClarificationRequestMessage,
   removeAIInstance,
   renameChatRoom,
   updateAIInstance,
@@ -52,6 +53,32 @@ describe("chat-room state", () => {
       authorType: "user",
       content: "Hello",
     });
+    expect(
+      createClarificationRequestMessage(
+        {
+          summary: "The AI instances need market focus before deciding.",
+          questions: ["Which market?"],
+        },
+        ids,
+      ),
+    ).toEqual({
+      id: "clarification-fixed",
+      authorType: "system",
+      systemType: "clarification_request",
+      content:
+        "CouncilAI needs your input before continuing:\n\nSummary:\nThe AI instances need market focus before deciding.\n\nQuestions:\n1. Which market?",
+    });
+  });
+
+  it("detects pending clarification request messages", () => {
+    const clarification = createClarificationRequestMessage({
+      summary: "The AI instances need market focus before deciding.",
+      questions: ["Which market?"],
+    });
+
+    expect(isClarificationRequestMessage(clarification)).toBe(true);
+    expect(isClarificationRequestMessage(message)).toBe(false);
+    expect(isClarificationRequestMessage(undefined)).toBe(false);
   });
 
   it("adds, updates, and removes AI instances", () => {
@@ -105,22 +132,4 @@ describe("chat-room state", () => {
     expect(cleared[0].canSummarize).toBe(false);
   });
 
-  it("marks summarize only when room messages still match checked messages", () => {
-    const checkedMessages = [message];
-    const currentRooms = [{ ...room, messages: checkedMessages }];
-
-    const marked = markCanSummarizeIfMessagesUnchanged({
-      chatRooms: currentRooms,
-      roomId: room.id,
-      recentMessages: checkedMessages,
-    });
-    expect(marked[0].canSummarize).toBe(true);
-
-    const stale = markCanSummarizeIfMessagesUnchanged({
-      chatRooms: [{ ...room, messages: [{ ...message, id: "newer" }] }],
-      roomId: room.id,
-      recentMessages: checkedMessages,
-    });
-    expect(stale[0].canSummarize).toBe(false);
-  });
 });
